@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 
-const PERSONA_LABELS = {
-  investor: "Investor",
-  tech_lead: "Tech Lead",
-  hr_manager: "HR Manager",
-  product_manager: "Product Manager",
+const PERSONA_TITLES = {
+  investor: "INVESTOR",
+  tech_lead: "TECH LEAD",
+  hr_manager: "HR MANAGER",
+  product_manager: "PRODUCT MANAGER",
 };
 
 export default function ChatWindow({ messages, persona, isLoading }) {
@@ -14,43 +14,47 @@ export default function ChatWindow({ messages, persona, isLoading }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  const personaLabel = PERSONA_LABELS[persona] || "Interviewer";
+  const title = PERSONA_TITLES[persona] || "INTERVIEWER";
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-        >
-          <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed
-              ${msg.role === "user"
-                ? "bg-red-600 text-white rounded-br-sm"
-                : "bg-gray-800 text-gray-100 rounded-bl-sm border border-gray-700"
-              }`}
-          >
-            {msg.role === "assistant" && (
-              <p className="text-xs text-gray-500 mb-1 font-medium uppercase tracking-wide">
-                {personaLabel}
-              </p>
-            )}
-            <p className="whitespace-pre-wrap">{msg.content}</p>
-          </div>
-        </div>
-      ))}
-      {isLoading && (
-        <div className="flex justify-start">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl rounded-bl-sm px-4 py-3">
-            <div className="flex gap-1 items-center">
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0ms]" />
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:150ms]" />
-              <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:300ms]" />
+    <div style={{
+      flex: 1, overflowY: "auto", padding: "32px 24px",
+      background: "radial-gradient(ellipse at top, rgba(226,75,74,0.04), transparent 60%)",
+    }}>
+      <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 18 }}>
+        {messages.map((msg) => (
+          <div key={msg.id} className="fade-in" style={{
+            maxWidth: "80%",
+            marginLeft: msg.role === "user" ? "auto" : undefined,
+            textAlign: msg.role === "user" ? "right" : "left",
+          }}>
+            <div className="mono" style={{
+              fontSize: 10, color: "var(--text-muted)", marginBottom: 6,
+              letterSpacing: "0.18em", textTransform: "uppercase",
+            }}>
+              {msg.role === "user" ? "You" : title}
+            </div>
+            <div className={msg.role === "user" ? "msg-user" : "msg-persona"}
+              style={{ fontSize: 15, lineHeight: 1.55, textAlign: "left", display: "inline-block", width: "100%" }}>
+              {msg.content}
             </div>
           </div>
-        </div>
-      )}
-      <div ref={bottomRef} />
+        ))}
+        {isLoading && (
+          <div className="fade-in" style={{ maxWidth: "80%" }}>
+            <div className="mono" style={{
+              fontSize: 10, color: "var(--text-muted)", marginBottom: 6,
+              letterSpacing: "0.18em", textTransform: "uppercase",
+            }}>
+              {title}
+            </div>
+            <div className="msg-persona" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "20px 22px" }}>
+              <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 }

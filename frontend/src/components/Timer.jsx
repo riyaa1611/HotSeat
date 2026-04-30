@@ -13,6 +13,13 @@ export default function Timer({ isRunning }) {
   const ss = String(seconds % 60).padStart(2, "0");
 
   return (
-    <span className="text-sm font-mono text-gray-400">{mm}:{ss}</span>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+      <span className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>
+        Elapsed
+      </span>
+      <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>
+        {mm}:{ss}
+      </span>
+    </div>
   );
 }

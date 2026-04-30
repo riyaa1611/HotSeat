@@ -1,30 +1,34 @@
+function MicIcon({ size = 20, color = "currentColor", filled = false }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="12" rx="3" fill={filled ? color : "none"} />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" />
+    </svg>
+  );
+}
+
 export default function VoiceInput({ isListening, isSupported, onToggle }) {
   if (!isSupported) {
     return (
-      <span className="text-xs text-gray-600 px-2">Voice not supported</span>
+      <div className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.16em", textTransform: "uppercase", alignSelf: "center" }}>
+        ⚠ Voice requires Chrome
+      </div>
     );
   }
-
   return (
     <button
       type="button"
       onClick={onToggle}
-      title={isListening ? "Stop recording" : "Start voice input"}
-      className={`p-3 rounded-xl transition-all ${
-        isListening
-          ? "bg-red-600 text-white animate-pulse"
-          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-      }`}
+      className={`btn ${isListening ? "pulse-red" : ""}`}
+      style={{
+        width: 56, padding: 0,
+        background: isListening ? "var(--accent-red)" : "var(--bg-input)",
+        borderColor: isListening ? "var(--accent-red)" : "var(--border-default)",
+        color: isListening ? "#fff" : "var(--text-primary)",
+      }}
+      aria-label="Toggle microphone"
     >
-      {isListening ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="6" y="6" width="12" height="12" rx="2" />
-        </svg>
-      ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-        </svg>
-      )}
+      <MicIcon size={20} filled={isListening} />
     </button>
   );
 }

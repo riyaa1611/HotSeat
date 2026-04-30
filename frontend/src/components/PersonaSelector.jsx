@@ -1,60 +1,80 @@
+import { useCallback } from "react";
+
 const PERSONAS = [
   {
     id: "investor",
-    label: "Investor",
-    emoji: "💰",
-    description: "VC who's funded nothing this month. Cares about money, not code.",
-    color: "border-yellow-500",
+    title: "INVESTOR",
+    quote: "You've got 5 minutes. Impress me.",
+    cares: ["Market", "Revenue", "Traction", "Why you?"],
+    sub: "Series A · Two-time founder · Suffers no fools",
   },
   {
     id: "tech_lead",
-    label: "Tech Lead",
-    emoji: "🔧",
-    description: "15 years of PRs. Will ask where your tests are.",
-    color: "border-blue-500",
+    title: "TECH LEAD",
+    quote: "I already read your repo. Don't repeat the README.",
+    cares: ["Architecture", "Tests", "Scale", "Trade-offs"],
+    sub: "Staff Eng · 14 yrs distributed systems",
   },
   {
     id: "hr_manager",
-    label: "HR Manager",
-    emoji: "📋",
-    description: "12 years of behavioral interviews. Smells rehearsed answers.",
-    color: "border-purple-500",
+    title: "HR MANAGER",
+    quote: "Tell me about this project. No jargon.",
+    cares: ["Communication", "Pressure", "Honesty", "Culture fit"],
+    sub: "Talent Partner · Watches you, not the slides",
   },
   {
     id: "product_manager",
-    label: "Product Manager",
-    emoji: "📊",
-    description: "Shipped 20 products, killed 15. Cares about users, not architecture.",
-    color: "border-green-500",
+    title: "PRODUCT MANAGER",
+    quote: "Who is this for and why should they care?",
+    cares: ["Users", "Metrics", "Roadmap", "Prioritization"],
+    sub: "Senior PM · Killed 3 products this quarter",
   },
 ];
 
 export default function PersonaSelector({ selected, onChange }) {
   return (
-    <div className="w-full max-w-2xl">
-      <p className="text-sm font-medium text-gray-400 mb-3">Choose Your Interviewer</p>
-      <div className="grid grid-cols-2 gap-3">
-        {PERSONAS.map((p) => (
-          <label
+    <div>
+      <div className="section-divider"><span>02 · Choose Your Interrogator</span></div>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gap: 14,
+      }}>
+        {PERSONAS.map((p, i) => (
+          <div
             key={p.id}
-            className={`relative flex flex-col gap-1 p-4 rounded-xl border-2 cursor-pointer transition-all
-              ${selected === p.id
-                ? `${p.color} bg-gray-800`
-                : "border-gray-700 bg-gray-800/50 hover:border-gray-500"
-              }`}
+            className={`persona-card ${selected === p.id ? "selected" : ""}`}
+            onClick={() => onChange(p.id)}
           >
-            <input
-              type="radio"
-              name="persona"
-              value={p.id}
-              checked={selected === p.id}
-              onChange={() => onChange(p.id)}
-              className="sr-only"
-            />
-            <span className="text-2xl">{p.emoji}</span>
-            <span className="font-semibold text-white">{p.label}</span>
-            <span className="text-xs text-gray-400">{p.description}</span>
-          </label>
+            <div className="selector" />
+            <div className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.22em", marginBottom: 12 }}>
+              0{i + 1}
+            </div>
+            <div style={{
+              fontSize: 18, fontWeight: 800, letterSpacing: "0.02em", marginBottom: 4,
+              color: selected === p.id ? "var(--accent-red)" : "var(--text-primary)",
+            }}>
+              {p.title}
+            </div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 16 }}>
+              {p.sub}
+            </div>
+            <div style={{
+              fontSize: 14, color: "var(--text-secondary)", fontStyle: "italic",
+              lineHeight: 1.5, marginBottom: 18, minHeight: 42,
+            }}>
+              "{p.quote}"
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {p.cares.map((c) => (
+                <span key={c} className="mono" style={{
+                  fontSize: 10, padding: "4px 8px",
+                  border: "1px solid var(--border-default)",
+                  color: "var(--text-secondary)", letterSpacing: "0.06em",
+                }}>{c}</span>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

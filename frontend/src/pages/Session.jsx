@@ -5,8 +5,24 @@ import VoiceInput from "../components/VoiceInput";
 import Timer from "../components/Timer";
 import { useSession } from "../hooks/useSession";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
+import { Grain, Logo } from "../components/shared";
 
 const MAX_TURNS = 12;
+
+const PERSONA_TITLES = {
+  investor: "INVESTOR",
+  tech_lead: "TECH LEAD",
+  hr_manager: "HR MANAGER",
+  product_manager: "PRODUCT MANAGER",
+};
+
+function SendIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
+    </svg>
+  );
+}
 
 export default function Session() {
   const location = useLocation();
@@ -22,33 +38,23 @@ export default function Session() {
     onTranscript: (text) => setInput((prev) => prev + text),
   });
 
-  // Inject first_message on mount
   useEffect(() => {
-    if (first_message) {
-      addMessage("assistant", first_message);
-    }
+    if (first_message) addMessage("assistant", first_message);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redirect to report when report is ready
   useEffect(() => {
-    if (report) {
-      navigate("/report", { state: { report, persona, repoUrl } });
-    }
+    if (report) navigate("/report", { state: { report, persona, repoUrl } });
   }, [report, navigate, persona, repoUrl]);
 
-  // Auto-end when is_final
   useEffect(() => {
-    if (isFinal) {
-      finish();
-    }
+    if (isFinal) finish();
   }, [isFinal, finish]);
 
   if (!session_id) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">
-          No session found.{" "}
-          <a href="/" className="text-red-400 underline">Go back</a>
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <p style={{ color: "var(--text-muted)" }}>
+          No session found. <a href="/" style={{ color: "var(--accent-red)" }}>Go back</a>
         </p>
       </div>
     );
@@ -63,31 +69,42 @@ export default function Session() {
     inputRef.current?.focus();
   }
 
+  const personaTitle = PERSONA_TITLES[persona] || "INTERVIEWER";
+  const progress = (Math.min(turnCount, MAX_TURNS) / MAX_TURNS) * 100;
+
   return (
-    <div className="min-h-screen flex flex-col max-w-3xl mx-auto">
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <Grain />
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <h1 className="font-bold text-white">
-            Hot<span className="text-red-500">Seat</span>
-          </h1>
-          <span className="text-xs px-2 py-1 bg-gray-800 text-gray-400 rounded-full capitalize">
-            {persona?.replace("_", " ")}
+      <header style={{
+        padding: "14px 24px", borderBottom: "1px solid var(--border-default)",
+        display: "flex", alignItems: "center", gap: 24, background: "var(--bg-primary)",
+        position: "sticky", top: 0, zIndex: 5,
+      }}>
+        <Logo size="sm" />
+        <div style={{ width: 1, height: 22, background: "var(--border-default)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="live-dot" />
+          <span className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+            Live with
           </span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: "0.04em" }}>{personaTitle}</span>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-500">
-            {turnCount}/{MAX_TURNS} questions
-          </span>
-          <Timer isRunning={!isFinal} />
-          <button
-            onClick={finish}
-            disabled={isLoading}
-            className="text-xs px-3 py-1.5 bg-gray-800 text-gray-400 rounded-lg hover:text-white hover:bg-gray-700 transition-colors disabled:opacity-40"
-          >
-            End Session
-          </button>
+        <div style={{ flex: 1 }} />
+        {/* Turn counter */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+          <span className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>Question</span>
+          <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{Math.min(turnCount, MAX_TURNS)} / {MAX_TURNS}</span>
         </div>
+        <Timer isRunning={!isFinal} />
+        <button className="btn btn-ghost" onClick={finish} disabled={isLoading} style={{ padding: "8px 14px", fontSize: 12 }}>
+          End Session
+        </button>
+      </header>
+
+      {/* Progress bar */}
+      <div style={{ height: 2, background: "var(--bg-card)" }}>
+        <div style={{ width: `${progress}%`, height: "100%", background: "var(--accent-red)", transition: "width 400ms ease" }} />
       </div>
 
       {/* Chat */}
@@ -95,42 +112,59 @@ export default function Session() {
 
       {/* Error */}
       {error && (
-        <div className="mx-4 mb-2 p-3 bg-red-900/40 border border-red-700 rounded-lg text-red-300 text-sm">
+        <div style={{
+          margin: "0 24px 8px", padding: "12px 16px",
+          background: "var(--accent-red-soft)", borderLeft: "2px solid var(--accent-red)",
+          color: "var(--accent-red)", fontSize: 13,
+        }}>
           {error}
         </div>
       )}
 
       {/* Input */}
-      {!isFinal && (
-        <form onSubmit={handleSend} className="p-4 border-t border-gray-800">
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your answer..."
-              disabled={isLoading}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-red-500 disabled:opacity-50"
-            />
-            <VoiceInput
-              isListening={isListening}
-              isSupported={isSupported}
-              onToggle={toggleListening}
-            />
-            <button
-              type="submit"
-              disabled={isLoading || !input.trim()}
-              className="px-5 py-3 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              Send
-            </button>
+      {!isFinal ? (
+        <div style={{ borderTop: "1px solid var(--border-default)", background: "var(--bg-primary)", padding: "18px 24px" }}>
+          <form onSubmit={handleSend}>
+            <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 10, alignItems: "stretch" }}>
+              <div style={{ flex: 1, position: "relative" }}>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={isListening ? "Listening…" : "Type your answer, or hit the mic."}
+                  rows={2}
+                  disabled={isLoading}
+                  style={{
+                    resize: "none", minHeight: 56,
+                    borderColor: isListening ? "var(--accent-red)" : "var(--border-default)",
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(e); }
+                  }}
+                />
+                <div className="mono" style={{
+                  position: "absolute", right: 12, bottom: 8, fontSize: 10,
+                  color: "var(--text-muted)", letterSpacing: "0.12em",
+                }}>
+                  ⏎ SEND · ⇧⏎ NEW LINE
+                </div>
+              </div>
+              <VoiceInput isListening={isListening} isSupported={isSupported} onToggle={toggleListening} />
+              <button type="submit" className="btn btn-primary" disabled={!input.trim() || isLoading} style={{ minWidth: 100 }}>
+                <SendIcon /> Send
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <div style={{
+          borderTop: "1px solid var(--border-default)", padding: "24px",
+          textAlign: "center", background: "var(--bg-primary)",
+        }}>
+          <div className="mono" style={{ fontSize: 11, letterSpacing: "0.3em", color: "var(--accent-red)", marginBottom: 8 }}>
+            SESSION COMPLETE
           </div>
-        </form>
-      )}
-
-      {isFinal && (
-        <div className="p-4 text-center text-gray-400 text-sm border-t border-gray-800">
-          Session complete. Generating your report...
+          <div style={{ fontSize: 18, fontWeight: 700 }}>Analyzing your performance…</div>
         </div>
       )}
     </div>
