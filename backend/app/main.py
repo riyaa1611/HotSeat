@@ -1,7 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from app.routers import repo, session, report
+from app.models.database import init_db
 
-app = FastAPI(title="HotSeat API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_db()
+    yield
+
+
+app = FastAPI(title="HotSeat API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -11,6 +21,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(repo.router, prefix="/api")
+app.include_router(session.router, prefix="/api")
+app.include_router(report.router, prefix="/api")
 
 
 @app.get("/health")
