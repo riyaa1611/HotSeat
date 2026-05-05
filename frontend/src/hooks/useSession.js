@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { respond, endSession } from "../services/api";
+import { supabase } from "../lib/supabase";
 
 export function useSession(sessionId) {
   const [messages, setMessages] = useState([]);
@@ -13,6 +14,39 @@ export function useSession(sessionId) {
     setMessages((prev) => [...prev, { role, content, id: Date.now() + Math.random() }]);
   }
 
+  // Realtime subscription — syncs messages from DB as they're saved
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const channel = supabase
+      .channel(`session:${sessionId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "sessions",
+          filter: `session_id=eq.${sessionId}`,
+        },
+        (payload) => {
+          try {
+            const dbMessages = JSON.parse(payload.new.messages);
+            setMessages(
+              dbMessages
+                .filter((m) => m.role !== "system")
+                .map((m, i) => ({ role: m.role, content: m.content, id: i }))
+            );
+            setTurnCount(payload.new.turn_count ?? 0);
+          } catch {
+            // ignore parse errors
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [sessionId]);
+
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || isLoading) return;
     addMessage("user", text);
@@ -20,9 +54,10 @@ export function useSession(sessionId) {
     setError("");
     try {
       const result = await respond(sessionId, text);
-      addMessage("assistant", result.response);
+      // Realtime will sync the full message list; HTTP response gives metadata
       setTurnCount(result.turn_count);
       setIsFinal(result.is_final);
+      if (!result.is_final) addMessage("assistant", result.response);
     } catch (e) {
       setError("Failed to get response. Check your connection.");
     } finally {

@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HotSeat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --bg-primary: #0A0A0B;
+    --bg-card: #141417;
+    --bg-card-2: #1A1A1D;
+    --bg-input: #252528;
+    --bg-hover: #2A2A2E;
+    --accent-red: #E24B4A;
+    --accent-red-soft: rgba(226, 75, 74, 0.12);
+    --accent-amber: #EF9F27;
+    --accent-amber-soft: rgba(239, 159, 39, 0.12);
+    --accent-green: #5DCAA5;
+    --accent-green-soft: rgba(93, 202, 165, 0.12);
+    --text-primary: #E8E6E1;
+    --text-secondary: #9B9A97;
+    --text-muted: #5F5E5A;
+    --border-default: #2C2C2F;
+    --border-strong: #3A3A3E;
+    --border-active: #E24B4A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg-primary); color: var(--text-primary); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; }
+  ::selection { background: var(--accent-red); color: #fff; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2C2C2F; border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: #3A3A3E; }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 14px; letter-spacing: 0.02em;
+    padding: 12px 20px; border: 1px solid var(--border-default); background: var(--bg-input);
+    color: var(--text-primary); cursor: pointer; transition: all 160ms ease;
+    text-transform: uppercase;
+  }
+  .btn:hover:not(:disabled) { background: var(--bg-hover); border-color: var(--border-strong); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-primary { background: var(--accent-red); border-color: var(--accent-red); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: #c93f3e; border-color: #c93f3e; }
+  .btn-primary:disabled { background: #2A2A2E; border-color: var(--border-default); color: var(--text-muted); }
+  .btn-large { padding: 18px 28px; font-size: 15px; }
+  .btn-ghost { background: transparent; border-color: var(--border-default); }
+
+  input[type="text"], input[type="url"], textarea {
+    font-family: inherit; font-size: 15px; color: var(--text-primary);
+    background: var(--bg-input); border: 1px solid var(--border-default);
+    padding: 14px 16px; outline: none; width: 100%;
+    transition: border-color 160ms ease;
+  }
+  input[type="text"]:focus, input[type="url"]:focus, textarea:focus { border-color: var(--accent-red); }
+  input::placeholder, textarea::placeholder { color: var(--text-muted); }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(226, 75, 74, 0.5); } 50% { box-shadow: 0 0 0 8px rgba(226, 75, 74, 0); } }
+  @keyframes pulseDot { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+  @keyframes skeleton { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
+  @keyframes scanline { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+  @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.92; } }
+
+  .fade-in { animation: fadeIn 200ms ease-out both; }
+  .pulse-red { animation: pulseRed 1.4s ease-out infinite; }
+
+  .skeleton {
+    background: linear-gradient(90deg, #1A1A1D 0%, #252528 50%, #1A1A1D 100%);
+    background-size: 400px 100%;
+    animation: skeleton 1.4s linear infinite;
+  }
+
+  .typing-dot {
+    width: 6px; height: 6px; background: var(--text-secondary); border-radius: 50%;
+    display: inline-block; animation: pulseDot 1.2s infinite ease-in-out;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.15s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 20px; right: 20px; z-index: 100;
+    background: var(--bg-card-2); border: 1px solid var(--border-default);
+    border-left: 3px solid var(--accent-red);
+    padding: 14px 18px; min-width: 280px; font-size: 14px;
+    animation: fadeIn 200ms ease-out;
+  }
+
+  /* Persona card */
+  .persona-card {
+    background: var(--bg-card); border: 1px solid var(--border-default);
+    padding: 24px; cursor: pointer; transition: all 200ms ease;
+    position: relative; overflow: hidden;
+  }
+  .persona-card:hover { border-color: var(--border-strong); background: var(--bg-card-2); }
+  .persona-card.selected {
+    border-color: var(--accent-red);
+    background: linear-gradient(180deg, rgba(226,75,74,0.06) 0%, transparent 100%);
+    transform: scale(1.01);
+    box-shadow: 0 0 0 1px var(--accent-red), 0 8px 32px rgba(226, 75, 74, 0.15);
+  }
+  .persona-card .selector {
+    position: absolute; top: 16px; right: 16px;
+    width: 16px; height: 16px; border: 1px solid var(--border-strong);
+    border-radius: 50%;
+  }
+  .persona-card.selected .selector { border-color: var(--accent-red); background: var(--accent-red); }
+  .persona-card.selected .selector::after {
+    content: ''; position: absolute; inset: 3px; background: #fff; border-radius: 50%;
+  }
+
+  /* Section dividers — brutal style */
+  .section-divider {
+    display: flex; align-items: center; gap: 12px;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em;
+    color: var(--text-muted); text-transform: uppercase;
+    margin: 32px 0 18px;
+  }
+  .section-divider::before, .section-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-default);
+  }
+
+  /* Chat bubbles */
+  .msg-persona {
+    background: #1E1E22; border-left: 2px solid var(--accent-red);
+    padding: 16px 20px; max-width: 80%;
+  }
+  .msg-user {
+    background: #252528; padding: 16px 20px; max-width: 80%;
+    margin-left: auto;
+  }
+
+  /* Live indicator */
+  .live-dot {
+    width: 8px; height: 8px; background: var(--accent-red); border-radius: 50%;
+    display: inline-block; animation: flicker 1.6s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent-red);
+  }
+
+  /* Score ring + bars */
+  .score-bar {
+    height: 4px; background: #1A1A1D; position: relative; overflow: hidden;
+  }
+  .score-bar-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    background: var(--accent-red); transition: width 600ms ease;
+  }
+
+  /* Recharts overrides */
+  .recharts-polar-grid-angle line { stroke: #2C2C2F; }
+  .recharts-polar-grid-concentric polygon { stroke: #2C2C2F; }
+
+  /* No-select for headers */
+  .no-select { user-select: none; }
+
+  #root { position: relative; z-index: 2; }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ---------- Custom SVG Radar Chart ----------
+function RadarChartSVG({ data, max = 10, size = 320 }) {
+  const cx = size / 2, cy = size / 2;
+  const radius = size * 0.36;
+  const N = data.length;
+  const angle = (i) => -Math.PI / 2 + (i * 2 * Math.PI) / N;
+  const point = (i, v) => {
+    const r = (v / max) * radius;
+    return [cx + r * Math.cos(angle(i)), cy + r * Math.sin(angle(i))];
+  };
+  const rings = [0.25, 0.5, 0.75, 1];
+  const polygon = (vals) => vals.map((v, i) => point(i, v).join(',')).join(' ');
+  const dataPoly = polygon(data.map(d => d.score));
+  return (
+    <svg width="100%" height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
+      {rings.map((r, i) => (
+        <polygon
+          key={i}
+          points={polygon(data.map(() => r * max))}
+          fill="none" stroke="#2C2C2F" strokeWidth="1"
+        />
+      ))}
+      {data.map((_, i) => {
+        const [x, y] = point(i, max);
+        return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#2C2C2F" strokeWidth="1" />;
+      })}
+      <polygon
+        points={dataPoly}
+        fill="rgba(226, 75, 74, 0.28)"
+        stroke="#E24B4A" strokeWidth="2"
+        style={{ filter: 'drop-shadow(0 0 8px rgba(226,75,74,0.4))' }}
+      />
+      {data.map((d, i) => {
+        const [px, py] = point(i, d.score);
+        return <circle key={i} cx={px} cy={py} r="3" fill="#E24B4A" stroke="#0A0A0B" strokeWidth="1.5" />;
+      })}
+      {data.map((d, i) => {
+        const [lx, ly] = point(i, max + 1.6);
+        const a = angle(i);
+        const anchor = Math.abs(Math.cos(a)) < 0.2 ? 'middle' : (Math.cos(a) > 0 ? 'start' : 'end');
+        return (
+          <g key={i}>
+            <text x={lx} y={ly} textAnchor={anchor} dominantBaseline="middle"
+              fill="#9B9A97" fontSize="11" fontFamily="JetBrains Mono, monospace"
+              letterSpacing="1" style={{ textTransform: 'uppercase' }}>
+              {d.metric}
+            </text>
+            <text x={lx} y={ly + 14} textAnchor={anchor} dominantBaseline="middle"
+              fill="#5F5E5A" fontSize="10" fontFamily="JetBrains Mono, monospace">
+              {d.score}/10
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// ---------- Icons (inline SVG) ----------
+const Icon = ({ d, size = 16, stroke = 'currentColor', fill = 'none', sw = 1.6, style }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style}>
+    <path d={d} />
+  </svg>
+);
+const FlameIcon = ({ size = 18, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.5-1.1 2.5-2.5 0-2-2.5-3-2.5-5 0 0-1 .5-1 2 0 1.5 1 1.5 1 3 0 1.5-1.5 1.5-1.5 0z"/>
+    <path d="M12 2c1 3 5 5 5 10a5 5 0 1 1-10 0c0-2 1-4 2-5 0 2 1 3 2 3-1-3 0-6 1-8z"/>
+  </svg>
+);
+const MicIcon = ({ size = 18, color = 'currentColor', filled = false }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="2" width="6" height="12" rx="3" fill={filled ? color : 'none'}/>
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/>
+  </svg>
+);
+const SendIcon = ({ size = 16 }) => <Icon size={size} d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />;
+const CheckIcon = ({ size = 14, color = '#5DCAA5' }) => <Icon size={size} stroke={color} d="M20 6 9 17l-5-5" sw={2} />;
+const XMark = ({ size = 14, color = '#E24B4A' }) => <Icon size={size} stroke={color} d="M18 6 6 18M6 6l12 12" sw={2} />;
+const PinIcon = ({ size = 14, color = '#EF9F27' }) => <Icon size={size} stroke={color} d="M12 17v5M5 12l7-9 7 9-3 2-4-1-4 1-3-2z" />;
+const ClockIcon = ({ size = 14 }) => <Icon size={size} d="M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" />;
+const GitIcon = ({ size = 14 }) => <Icon size={size} d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9v3a3 3 0 0 1-3 3H9" />;
+const ArrowLeft = ({ size = 14 }) => <Icon size={size} d="M19 12H5M12 19l-7-7 7-7" />;
+const Refresh = ({ size = 14 }) => <Icon size={size} d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" />;
+
+// ---------- Personas ----------
+const PERSONAS = [
+  {
+    id: 'investor',
+    title: 'INVESTOR',
+    quote: "You've got 5 minutes. Impress me.",
+    cares: ['Market', 'Revenue', 'Traction', 'Why you?'],
+    sub: 'Series A · Two-time founder · Suffers no fools',
+  },
+  {
+    id: 'tech_lead',
+    title: 'TECH LEAD',
+    quote: "I already read your repo. Don't repeat the README.",
+    cares: ['Architecture', 'Tests', 'Scale', 'Trade-offs'],
+    sub: 'Staff Eng · 14 yrs distributed systems',
+  },
+  {
+    id: 'hr',
+    title: 'HR MANAGER',
+    quote: "Tell me about this project. No jargon.",
+    cares: ['Communication', 'Pressure', 'Honesty', 'Culture fit'],
+    sub: 'Talent Partner · Watches you, not the slides',
+  },
+  {
+    id: 'product',
+    title: 'PRODUCT MANAGER',
+    quote: "Who is this for and why should they care?",
+    cares: ['Users', 'Metrics', 'Roadmap', 'Prioritization'],
+    sub: 'Senior PM · Killed 3 products this quarter',
+  },
+];
+
+const PERSONA_BY_ID = Object.fromEntries(PERSONAS.map(p => [p.id, p]));
+
+// ---------- Mock conversation flows per persona ----------
+const SCRIPTS = {
+  investor: [
+    "You've got 5 minutes. What is this and why should I care?",
+    "\"A platform.\" Great. So is LinkedIn. What's the actual business model?",
+    "Who's paying? How much? How do you know they'll keep paying?",
+    "What stops OpenAI from shipping this next Tuesday?",
+    "Walk me through your unit economics. CAC, LTV, payback period.",
+    "Last question — why you? Why this team, why now?",
+  ],
+  tech_lead: [
+    "I read your repo. Tell me what's NOT in the README.",
+    "Why this stack? And don't say \"I knew it already.\"",
+    "Walk me through what happens when this hits 10k concurrent users.",
+    "Your test coverage is 31%. Defend that or admit it.",
+    "What's the dumbest decision in this codebase right now?",
+    "If I gave you two weeks to rewrite one module, which one and why?",
+  ],
+  hr: [
+    "Hi. In simple words — what does this project do?",
+    "What was the hardest part for you, personally?",
+    "Walk me through a moment where you almost gave up.",
+    "How do you handle disagreement on a team?",
+    "Tell me about a time you were wrong about something technical.",
+    "Why are you sitting in this seat right now, and not somewhere else?",
+  ],
+  product: [
+    "Who is this for? Specifically. Not \"developers.\"",
+    "What's the one metric that tells you this is working?",
+    "If I cut your roadmap in half tomorrow, what survives?",
+    "How is this different from the three other tools that already do this?",
+    "What's something you built that nobody used? What did you learn?",
+    "Pitch me the next 90 days. Go.",
+  ],
+};
+
+// ---------- Mock report data ----------
+const MOCK_REPORT = {
+  overall: 5,
+  scores: {
+    Clarity: 7,
+    Technical: 4,
+    Business: 3,
+    Pressure: 6,
+    Honesty: 8,
+  },
+  strengths: [
+    'Admitted gaps instead of BS-ing through them',
+    'Clear, plain-language explanation of the core feature',
+  ],
+  weaknesses: [
+    "Couldn't explain a revenue model beyond \"freemium\"",
+    "No answer for \"why not just use an existing tool\"",
+    'Rambled on technical questions — three sentences became fifteen',
+  ],
+  homework: 'Prepare a tight 30-second answer for: "What is your competitive moat, and how do you defend it in 12 months?"',
+};
+
+// ---------- Hash routing ----------
+function useHashRoute() {
+  const [route, setRoute] = useState(() => (window.location.hash.replace('#', '') || '/'));
+  useEffect(() => {
+    const h = () => setRoute(window.location.hash.replace('#', '') || '/');
+    window.addEventListener('hashchange', h);
+    return () => window.removeEventListener('hashchange', h);
+  }, []);
+  const navigate = (path) => { window.location.hash = path; };
+  return [route, navigate];
+}
+
+// ---------- App store (simple shared state via module-level) ----------
+const Store = {
+  state: {
+    repoUrl: '',
+    repoSummary: null,
+    persona: null,
+    sessionId: null,
+    messages: [],
+    turn: 0,
+    elapsed: 0,
+  },
+  set(patch) { Object.assign(this.state, patch); }
+};
+
+// ---------- Logo ----------
+function Logo({ size = 'lg' }) {
+  const big = size === 'lg';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: big ? 12 : 8 }}>
+      <div style={{
+        width: big ? 36 : 24, height: big ? 36 : 24,
+        background: 'var(--accent-red)', display: 'grid', placeItems: 'center',
+        boxShadow: '0 0 24px rgba(226,75,74,0.4)',
+      }}>
+        <FlameIcon size={big ? 22 : 14} color="#fff" />
+      </div>
+      <div style={{
+        fontWeight: 800, fontSize: big ? 22 : 16, letterSpacing: '-0.02em',
+      }}>
+        Hot<span style={{ color: 'var(--accent-red)' }}>Seat</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Toast ----------
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const show = useCallback((msg, type = 'error') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+  const node = toast && (
+    <div className="toast" style={{
+      borderLeftColor: toast.type === 'error' ? 'var(--accent-red)'
+        : toast.type === 'success' ? 'var(--accent-green)' : 'var(--text-secondary)'
+    }}>
+      <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.16em', marginBottom: 4 }}>
+        {toast.type === 'error' ? 'Error' : toast.type === 'success' ? 'OK' : 'Info'}
+      </div>
+      <div>{toast.msg}</div>
+    </div>
+  );
+  return { show, node };
+}
+
+// =======================================================
+// HOME PAGE
+// =======================================================
+function HomePage({ navigate }) {
+  const [url, setUrl] = useState(Store.state.repoUrl || '');
+  const [parsing, setParsing] = useState(false);
+  const [summary, setSummary] = useState(Store.state.repoSummary);
+  const [selectedPersona, setSelectedPersona] = useState(Store.state.persona || null);
+  const [urlError, setUrlError] = useState('');
+  const { show, node: toastNode } = useToast();
+
+  const validUrl = /^https?:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/.test(url.trim());
+
+  const handleParse = () => {
+    if (!validUrl) { setUrlError('Use the full https://github.com/owner/repo format.'); return; }
+    setUrlError('');
+    setParsing(true);
+    setSummary(null);
+    // mocked parse
+    setTimeout(() => {
+      const repoName = url.trim().split('/').pop().replace(/\/$/, '');
+      const result = {
+        name: repoName || 'hotseat',
+        owner: url.split('github.com/')[1].split('/')[0],
+        files: 42 + Math.floor(Math.random() * 80),
+        stack: ['Python', 'React', 'PostgreSQL'],
+        loc: '12.4k',
+        lastCommit: '3 days ago',
+        readme: 'A platform for developers to practice pitching their projects under pressure.',
+      };
+      setSummary(result);
+      Store.set({ repoUrl: url.trim(), repoSummary: result });
+      setParsing(false);
+    }, 1400);
+  };
+
+  const handleEnter = () => {
+    if (!summary || !selectedPersona) return;
+    Store.set({ persona: selectedPersona, sessionId: 'sess_' + Date.now(), messages: [], turn: 0, elapsed: 0 });
+    navigate('/session');
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {toastNode}
+      {/* Top nav */}
+      <header style={{
+        padding: '20px 32px', borderBottom: '1px solid var(--border-default)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <Logo size="sm" />
+        <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+          v0.4 · Beta
+        </div>
+      </header>
+
+      <main style={{ flex: 1, maxWidth: 880, margin: '0 auto', width: '100%', padding: '64px 32px 96px' }}>
+        {/* Hero */}
+        <div style={{ marginBottom: 56 }}>
+          <div className="mono" style={{
+            fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase',
+            color: 'var(--accent-red)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            <span className="live-dot" /> Pitch Practice · Live
+          </div>
+          <h1 style={{
+            fontSize: 64, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.0,
+            margin: '0 0 16px',
+          }}>
+            Get grilled <span style={{ color: 'var(--accent-red)' }}>before</span><br />the real thing.
+          </h1>
+          <p style={{ fontSize: 17, color: 'var(--text-secondary)', maxWidth: 560, lineHeight: 1.5, margin: 0 }}>
+            Drop a repo. Pick your interrogator. Survive twelve questions designed
+            to find every weak spot in your pitch — so the real meeting doesn't.
+          </p>
+        </div>
+
+        {/* Repo input */}
+        <div className="section-divider"><span>01 · Your Project</span></div>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <div style={{
+              position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+              color: 'var(--text-muted)', display: 'flex', alignItems: 'center',
+            }}>
+              <GitIcon />
+            </div>
+            <input
+              type="url"
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setUrlError(''); }}
+              placeholder="https://github.com/owner/repo"
+              style={{ paddingLeft: 40 }}
+              onKeyDown={(e) => e.key === 'Enter' && handleParse()}
+            />
+          </div>
+          <button
+            className="btn btn-ghost"
+            onClick={handleParse}
+            disabled={parsing || !url.trim()}
+            style={{ minWidth: 140 }}
+          >
+            {parsing ? 'Parsing…' : 'Parse Repo'}
+          </button>
+        </div>
+        {urlError && (
+          <div style={{ color: 'var(--accent-red)', fontSize: 13, marginTop: 4 }}>{urlError}</div>
+        )}
+
+        {/* Repo summary */}
+        {parsing && <RepoSkeleton />}
+        {summary && !parsing && <RepoSummary summary={summary} />}
+
+        {/* Personas */}
+        <div className="section-divider"><span>02 · Choose Your Interrogator</span></div>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14,
+        }}>
+          {PERSONAS.map((p, i) => (
+            <PersonaCard
+              key={p.id}
+              persona={p}
+              index={i}
+              selected={selectedPersona === p.id}
+              onSelect={() => setSelectedPersona(p.id)}
+            />
+          ))}
+        </div>
+
+        {/* Enter button */}
+        <div style={{ marginTop: 40, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button
+            className="btn btn-primary btn-large"
+            disabled={!summary || !selectedPersona}
+            onClick={handleEnter}
+            style={{ minWidth: 280 }}
+          >
+            <FlameIcon size={16} color="#fff" />
+            Enter the Hot Seat
+          </button>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--text-muted)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            {!summary && !selectedPersona && '› Parse repo · Pick persona'}
+            {summary && !selectedPersona && '› Pick a persona to continue'}
+            {!summary && selectedPersona && '› Parse a repo to continue'}
+            {summary && selectedPersona && '› Average session: 8 minutes'}
+          </div>
+        </div>
+      </main>
+
+      <footer style={{
+        borderTop: '1px solid var(--border-default)', padding: '20px 32px',
+        display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)',
+      }}>
+        <div className="mono" style={{ letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+          No coddling. No participation trophies.
+        </div>
+        <div className="mono" style={{ letterSpacing: '0.12em' }}>
+          🔥 SF · LON · NYC
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function RepoSkeleton() {
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border-default)',
+      padding: 20, marginTop: 12,
+    }}>
+      <div className="skeleton" style={{ height: 14, width: '40%', marginBottom: 12 }} />
+      <div className="skeleton" style={{ height: 10, width: '70%', marginBottom: 8 }} />
+      <div className="skeleton" style={{ height: 10, width: '55%' }} />
+    </div>
+  );
+}
+
+function RepoSummary({ summary }) {
+  return (
+    <div className="fade-in" style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border-default)',
+      borderLeft: '2px solid var(--accent-green)',
+      padding: 20, marginTop: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14 }}>
+        <span className="mono" style={{ fontSize: 11, color: 'var(--accent-green)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+          ✓ Parsed
+        </span>
+        <span style={{ fontWeight: 700, fontSize: 16 }}>{summary.owner}/{summary.name}</span>
+        <span className="mono" style={{ fontSize: 12, color: 'var(--text-muted)' }}>· {summary.lastCommit}</span>
+      </div>
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1,
+        background: 'var(--border-default)', border: '1px solid var(--border-default)',
+      }}>
+        <Stat label="Files" value={summary.files} />
+        <Stat label="LOC" value={summary.loc} />
+        <Stat label="Stack" value={summary.stack.join(' · ')} />
+        <Stat label="Risk" value="Medium" tone="amber" />
+      </div>
+      <div style={{ marginTop: 14, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 11, letterSpacing: '0.16em' }}>README · </span>
+        {summary.readme}
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, tone }) {
+  const color = tone === 'amber' ? 'var(--accent-amber)' : 'var(--text-primary)';
+  return (
+    <div style={{ background: 'var(--bg-card)', padding: '12px 14px' }}>
+      <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, color, marginTop: 4 }}>{value}</div>
+    </div>
+  );
+}
+
+function PersonaCard({ persona, index, selected, onSelect }) {
+  return (
+    <div className={`persona-card ${selected ? 'selected' : ''}`} onClick={onSelect}>
+      <div className="selector" />
+      <div className="mono" style={{
+        fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.22em', marginBottom: 12,
+      }}>
+        0{index + 1}
+      </div>
+      <div style={{
+        fontSize: 18, fontWeight: 800, letterSpacing: '0.02em', marginBottom: 4,
+        color: selected ? 'var(--accent-red)' : 'var(--text-primary)',
+      }}>
+        {persona.title}
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 16, fontStyle: 'normal' }}>
+        {persona.sub}
+      </div>
+      <div style={{
+        fontSize: 14, color: 'var(--text-secondary)', fontStyle: 'italic',
+        lineHeight: 1.5, marginBottom: 18, minHeight: 42,
+      }}>
+        “{persona.quote}”
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {persona.cares.map((c) => (
+          <span key={c} className="mono" style={{
+            fontSize: 10, padding: '4px 8px',
+            border: '1px solid var(--border-default)',
+            color: 'var(--text-secondary)',
+            letterSpacing: '0.06em',
+          }}>{c}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =======================================================
+// SESSION PAGE
+// =======================================================
+function SessionPage({ navigate }) {
+  const persona = PERSONA_BY_ID[Store.state.persona];
+  const repo = Store.state.repoSummary;
+  const script = persona ? SCRIPTS[persona.id] : [];
+  const TOTAL_QUESTIONS = 12;
+
+  const [messages, setMessages] = useState(() => Store.state.messages.length ? Store.state.messages : [
+    { from: 'persona', text: script[0], ts: Date.now() },
+  ]);
+  const [input, setInput] = useState('');
+  const [waiting, setWaiting] = useState(false);
+  const [elapsed, setElapsed] = useState(Store.state.elapsed || 0);
+  const [turn, setTurn] = useState(1);
+  const [isListening, setIsListening] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showCompleteOverlay, setShowCompleteOverlay] = useState(false);
+  const [voiceSupported] = useState(() => typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition));
+  const { show: showToast, node: toastNode } = useToast();
+
+  const chatRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Redirect if no persona
+  useEffect(() => {
+    if (!persona || !repo) { navigate('/'); }
+  }, []);
+
+  // Timer
+  useEffect(() => {
+    const id = setInterval(() => setElapsed((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Auto-scroll
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [messages, waiting]);
+
+  if (!persona || !repo) return null;
+
+  const fmtTime = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+
+  const send = () => {
+    const text = input.trim();
+    if (!text || waiting) return;
+    const next = [...messages, { from: 'user', text, ts: Date.now() }];
+    setMessages(next);
+    setInput('');
+    setWaiting(true);
+
+    setTimeout(() => {
+      const nextScript = script[turn] || "We're done here. Wait for your report.";
+      const isFinal = turn >= script.length;
+      setMessages((prev) => [...prev, { from: 'persona', text: nextScript, ts: Date.now() }]);
+      setTurn((t) => t + 1);
+      setWaiting(false);
+      if (isFinal) {
+        setTimeout(() => {
+          setShowCompleteOverlay(true);
+          setTimeout(() => navigate('/report'), 1800);
+        }, 600);
+      }
+    }, 1100 + Math.random() * 600);
+  };
+
+  const toggleMic = () => {
+    if (!voiceSupported) return;
+    if (isListening) { setIsListening(false); return; }
+    setIsListening(true);
+    // Mock transcription — append text gradually
+    const phrases = [
+      "So, the way we approach it is",
+      "the platform aggregates user activity into",
+      "weekly insight digests, but",
+      "we're still figuring out monetization.",
+    ];
+    let i = 0;
+    const id = setInterval(() => {
+      if (i >= phrases.length) {
+        clearInterval(id);
+        setIsListening(false);
+        return;
+      }
+      setInput((cur) => (cur ? cur + ' ' : '') + phrases[i]);
+      i++;
+    }, 700);
+  };
+
+  const endEarly = () => {
+    if (window.confirm('End session early? You will still get a report.')) {
+      navigate('/report');
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {toastNode}
+      {/* Header bar */}
+      <header style={{
+        padding: '14px 24px', borderBottom: '1px solid var(--border-default)',
+        display: 'flex', alignItems: 'center', gap: 24, background: 'var(--bg-primary)',
+        position: 'sticky', top: 0, zIndex: 5,
+      }}>
+        <Logo size="sm" />
+        <div style={{
+          width: 1, height: 22, background: 'var(--border-default)',
+        }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="live-dot" />
+          <span className="mono" style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+            Live with
+          </span>
+          <span style={{ fontWeight: 700, fontSize: 13, letterSpacing: '0.04em' }}>{persona.title}</span>
+        </div>
+
+        <div style={{ flex: 1 }} />
+
+        <HeaderStat label="Question" value={`${Math.min(turn, TOTAL_QUESTIONS)} / ${TOTAL_QUESTIONS}`} />
+        <HeaderStat label="Elapsed" value={fmtTime(elapsed)} mono icon={<ClockIcon />} />
+        <button className="btn btn-ghost" onClick={endEarly} style={{ padding: '8px 14px', fontSize: 12 }}>
+          End Session
+        </button>
+      </header>
+
+      {/* Progress bar */}
+      <div style={{ height: 2, background: 'var(--bg-card)' }}>
+        <div style={{
+          width: `${(Math.min(turn, TOTAL_QUESTIONS) / TOTAL_QUESTIONS) * 100}%`,
+          height: '100%', background: 'var(--accent-red)', transition: 'width 400ms ease',
+        }} />
+      </div>
+
+      {/* Chat */}
+      <main ref={chatRef} style={{
+        flex: 1, overflowY: 'auto', padding: '32px 24px',
+        background: 'radial-gradient(ellipse at top, rgba(226,75,74,0.04), transparent 60%)',
+      }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {messages.map((m, i) => (
+            <Message key={i} message={m} persona={persona} />
+          ))}
+          {waiting && (
+            <div className="fade-in" style={{ maxWidth: '80%' }}>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 6, letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+                {persona.title}
+              </div>
+              <div className="msg-persona" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '20px 22px' }}>
+                <span className="typing-dot" /><span className="typing-dot" /><span className="typing-dot" />
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Input area */}
+      <div style={{
+        borderTop: '1px solid var(--border-default)', background: 'var(--bg-primary)',
+        padding: '18px 24px',
+      }}>
+        <div style={{ maxWidth: 760, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'stretch' }}>
+          <div style={{ flex: 1, position: 'relative' }}>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={isListening ? 'Listening…' : 'Type your answer, or hit the mic.'}
+              rows={2}
+              style={{
+                resize: 'none', minHeight: 56,
+                borderColor: isListening ? 'var(--accent-red)' : 'var(--border-default)',
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+              }}
+            />
+            <div className="mono" style={{
+              position: 'absolute', right: 12, bottom: 8, fontSize: 10,
+              color: 'var(--text-muted)', letterSpacing: '0.12em',
+            }}>
+              ⏎ SEND · ⇧⏎ NEW LINE
+            </div>
+          </div>
+          {voiceSupported && (
+            <button
+              onClick={toggleMic}
+              className={`btn ${isListening ? 'pulse-red' : ''}`}
+              style={{
+                width: 56, padding: 0,
+                background: isListening ? 'var(--accent-red)' : 'var(--bg-input)',
+                borderColor: isListening ? 'var(--accent-red)' : 'var(--border-default)',
+                color: isListening ? '#fff' : 'var(--text-primary)',
+              }}
+              aria-label="Toggle microphone"
+            >
+              <MicIcon size={20} filled={isListening} />
+            </button>
+          )}
+          <button
+            onClick={send}
+            className="btn btn-primary"
+            disabled={!input.trim() || waiting}
+            style={{ minWidth: 100 }}
+          >
+            <SendIcon /> Send
+          </button>
+        </div>
+        {!voiceSupported && (
+          <div className="mono" style={{
+            maxWidth: 760, margin: '8px auto 0', fontSize: 10,
+            color: 'var(--text-muted)', letterSpacing: '0.16em', textTransform: 'uppercase',
+          }}>
+            ⚠ Voice input requires Chrome
+          </div>
+        )}
+      </div>
+
+      {showCompleteOverlay && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(10,10,11,0.92)',
+          display: 'grid', placeItems: 'center', zIndex: 50, animation: 'fadeIn 200ms',
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div className="mono" style={{
+              fontSize: 11, letterSpacing: '0.3em', color: 'var(--accent-red)', marginBottom: 16,
+            }}>SESSION COMPLETE</div>
+            <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: '-0.02em', marginBottom: 8 }}>
+              You're done here.
+            </div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
+              Analyzing your performance<span className="typing-dot" style={{ marginLeft: 6 }}/><span className="typing-dot"/><span className="typing-dot"/>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HeaderStat({ label, value, mono, icon }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+      <span className="mono" style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+        {label}
+      </span>
+      <span style={{
+        display: 'flex', alignItems: 'center', gap: 6,
+        fontFamily: mono ? 'JetBrains Mono, monospace' : 'inherit',
+        fontWeight: 600, fontSize: 13, color: 'var(--text-primary)',
+      }}>
+        {icon}{value}
+      </span>
+    </div>
+  );
+}
+
+function Message({ message, persona }) {
+  if (message.from === 'persona') {
+    return (
+      <div className="fade-in" style={{ maxWidth: '80%' }}>
+        <div className="mono" style={{
+          fontSize: 10, color: 'var(--text-muted)', marginBottom: 6,
+          letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>
+          {persona.title}
+        </div>
+        <div className="msg-persona" style={{ fontSize: 15, lineHeight: 1.55 }}>
+          {message.text}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="fade-in" style={{ maxWidth: '80%', marginLeft: 'auto', textAlign: 'right' }}>
+      <div className="mono" style={{
+        fontSize: 10, color: 'var(--text-muted)', marginBottom: 6,
+        letterSpacing: '0.18em', textTransform: 'uppercase',
+      }}>
+        You
+      </div>
+      <div className="msg-user" style={{ fontSize: 15, lineHeight: 1.55, textAlign: 'left' }}>
+        {message.text}
+      </div>
+    </div>
+  );
+}
+
+// =======================================================
+// REPORT PAGE
+// =======================================================
+function ReportPage({ navigate }) {
+  const persona = PERSONA_BY_ID[Store.state.persona] || PERSONAS[0];
+  const repo = Store.state.repoSummary;
+  const r = MOCK_REPORT;
+  const radarData = useMemo(() => Object.entries(r.scores).map(([metric, score]) => ({ metric, score })), []);
+
+  const overallColor =
+    r.overall >= 7 ? 'var(--accent-green)' :
+    r.overall < 5 ? 'var(--accent-red)' : 'var(--accent-amber)';
+  const overallLabel =
+    r.overall >= 7 ? 'Solid' :
+    r.overall < 5 ? 'Cooked' : 'Mid';
+
+  const goAgain = () => {
+    Store.set({ messages: [], turn: 0, elapsed: 0, sessionId: 'sess_' + Date.now() });
+    navigate('/session');
+  };
+  const switchPersona = () => {
+    Store.set({ persona: null, messages: [], turn: 0, elapsed: 0 });
+    navigate('/');
+  };
+  const shareResults = () => {
+    const summary = `HotSeat — Cooked at ${r.overall}/10\n\nPersona: ${persona.title}\nRepo: ${repo?.owner || 'someone'}/${repo?.name || 'a-project'}\n\nWhere I got cooked:\n${r.weaknesses.map(w => '· ' + w).join('\n')}\n\nHomework: ${r.homework}\n\n→ hotseat.dev`;
+    navigator.clipboard?.writeText(summary);
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <header style={{
+        padding: '20px 32px', borderBottom: '1px solid var(--border-default)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <Logo size="sm" />
+        <button className="btn btn-ghost" onClick={() => navigate('/')} style={{ padding: '8px 14px', fontSize: 12 }}>
+          <ArrowLeft /> Home
+        </button>
+      </header>
+
+      <main style={{ flex: 1, maxWidth: 980, margin: '0 auto', width: '100%', padding: '48px 32px 80px' }}>
+        {/* Title */}
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div className="mono" style={{
+            fontSize: 11, letterSpacing: '0.3em', color: 'var(--text-muted)',
+            textTransform: 'uppercase', marginBottom: 14,
+          }}>
+            ── Session Complete ──
+          </div>
+          <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-0.03em', margin: 0 }}>
+            Your performance report
+          </h1>
+          <div style={{
+            color: 'var(--text-secondary)', fontSize: 14, marginTop: 10,
+            display: 'flex', justifyContent: 'center', gap: 16,
+          }}>
+            <span className="mono">vs. {persona.title}</span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span className="mono">{repo?.owner || 'you'}/{repo?.name || 'project'}</span>
+            <span style={{ color: 'var(--text-muted)' }}>·</span>
+            <span className="mono">12 questions · 8m 14s</span>
+          </div>
+        </div>
+
+        {/* Score panel */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: 1,
+          background: 'var(--border-default)', border: '1px solid var(--border-default)',
+          marginBottom: 36,
+        }}>
+          {/* Overall */}
+          <div style={{ background: 'var(--bg-card)', padding: '40px 32px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: 16 }}>
+              Overall Score
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{
+                fontSize: 96, fontWeight: 800, lineHeight: 1, letterSpacing: '-0.04em',
+                color: overallColor,
+              }}>{r.overall}</span>
+              <span className="mono" style={{ fontSize: 18, color: 'var(--text-muted)' }}>/ 10</span>
+            </div>
+            <div style={{ marginTop: 14, fontSize: 13, color: overallColor, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              · {overallLabel}
+            </div>
+            <div style={{ marginTop: 24, fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+              You held the floor on the easy questions. The hard ones found gaps in business depth and follow-through.
+            </div>
+          </div>
+          {/* Radar */}
+          <div style={{ background: 'var(--bg-card)', padding: '24px 16px', position: 'relative' }}>
+            <div className="mono" style={{
+              position: 'absolute', top: 24, left: 24, fontSize: 10,
+              color: 'var(--text-muted)', letterSpacing: '0.22em', textTransform: 'uppercase',
+            }}>
+              Breakdown
+            </div>
+            <div style={{ marginTop: 16, display: 'grid', placeItems: 'center', minHeight: 320 }}>
+              <RadarChartSVG data={radarData} size={320} />
+            </div>
+          </div>
+        </div>
+
+        {/* Score bars */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16, marginBottom: 48,
+        }}>
+          {Object.entries(r.scores).map(([k, v]) => (
+            <div key={k}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                <span className="mono" style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{k}</span>
+                <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>{v}<span style={{ color: 'var(--text-muted)', fontSize: 11 }}>/10</span></span>
+              </div>
+              <div className="score-bar">
+                <div className="score-bar-fill" style={{
+                  width: `${v * 10}%`,
+                  background: v >= 7 ? 'var(--accent-green)' : v < 5 ? 'var(--accent-red)' : 'var(--accent-amber)',
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Strengths + Weaknesses + Homework */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+          <FeedbackCard
+            title="What you did okay"
+            tone="green"
+            icon={CheckIcon}
+            items={r.strengths}
+          />
+          <FeedbackCard
+            title="Where you got cooked"
+            tone="red"
+            icon={XMark}
+            items={r.weaknesses}
+          />
+        </div>
+
+        <div className="section-divider"><span>Your Homework</span></div>
+        <div style={{
+          background: 'var(--bg-card)',
+          borderLeft: '3px solid var(--accent-amber)',
+          border: '1px solid var(--border-default)',
+          padding: '24px 28px', display: 'flex', gap: 16, alignItems: 'flex-start',
+        }}>
+          <div style={{
+            background: 'var(--accent-amber-soft)', padding: 10,
+            borderRadius: 0, flexShrink: 0,
+          }}>
+            <PinIcon size={18} />
+          </div>
+          <div>
+            <div className="mono" style={{
+              fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase',
+              color: 'var(--accent-amber)', marginBottom: 8,
+            }}>
+              Action item · Before next session
+            </div>
+            <div style={{ fontSize: 17, lineHeight: 1.5, fontWeight: 500 }}>
+              {r.homework}
+            </div>
+          </div>
+        </div>
+
+        {/* CTAs */}
+        <div style={{
+          marginTop: 48, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap',
+        }}>
+          <button className="btn btn-primary btn-large" onClick={goAgain}>
+            <FlameIcon size={14} color="#fff" /> Go Again
+          </button>
+          <button className="btn btn-large" onClick={switchPersona}>
+            <Refresh /> Switch Persona
+          </button>
+          <div style={{ flex: 1 }} />
+          <button className="btn btn-ghost" onClick={shareResults}>
+            Copy Summary
+          </button>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function FeedbackCard({ title, tone, icon: IconC, items }) {
+  const color = tone === 'green' ? 'var(--accent-green)' : 'var(--accent-red)';
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border-default)',
+      padding: '24px 26px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+        <span style={{ width: 6, height: 6, background: color, display: 'inline-block' }} />
+        <span className="mono" style={{
+          fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: color,
+        }}>{title}</span>
+      </div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {items.map((x, i) => (
+          <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', fontSize: 14, lineHeight: 1.5 }}>
+            <span style={{ paddingTop: 3, flexShrink: 0 }}><IconC size={14} color={color} /></span>
+            <span>{x}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// =======================================================
+// APP
+// =======================================================
+function App() {
+  const [route, navigate] = useHashRoute();
+  const labels = { '/': '01 Home', '/session': '02 Session', '/report': '03 Report' };
+
+  return (
+    <div data-screen-label={labels[route] || '01 Home'}>
+      {route === '/session' ? <SessionPage navigate={navigate} /> :
+       route === '/report' ? <ReportPage navigate={navigate} /> :
+       <HomePage navigate={navigate} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

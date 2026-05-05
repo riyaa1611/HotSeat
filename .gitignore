@@ -17,6 +17,18 @@ env/
 # Environment files
 .env
 *.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Local workspace metadata
+.claude/
+.mcp.json
+
+# Generated local data
+backend/*.db
+Gemini_Generated_Image_*.png
 
 # IDE
 .vscode/

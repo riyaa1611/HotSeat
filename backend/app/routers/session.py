@@ -1,5 +1,5 @@
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.models.schemas import (
     StartSessionRequest, StartSessionResponse,
     RespondRequest, RespondResponse,
@@ -10,15 +10,15 @@ from app.services.repo_parser import parse_repo
 from app.services.context_builder import build_context
 from app.services.conversation import SessionManager
 from app.services.evaluator import evaluate_session
+from app.auth import get_current_user
 
 router = APIRouter()
 
-# Module-level session manager (single instance per worker)
 _manager = SessionManager()
 
 
 @router.post("/start-session", response_model=StartSessionResponse)
-async def start_session(request: StartSessionRequest):
+async def start_session(request: StartSessionRequest, user_id: str = Depends(get_current_user)):
     try:
         parsed = await parse_repo(request.repo_url)
     except ValueError as e:
@@ -29,20 +29,19 @@ async def start_session(request: StartSessionRequest):
 
     _manager.start_session(session_id, request.persona, repo_context, request.repo_url)
 
-    # Get the first message (opening line from the persona)
     first_message_result = await _manager.respond(session_id, "__INIT__")
     first_message = first_message_result["response"]
 
     await save_session(
         session_id, request.persona, request.repo_url,
-        _manager.get_messages(session_id), 0,
+        _manager.get_messages(session_id), 0, user_id,
     )
 
     return StartSessionResponse(session_id=session_id, first_message=first_message)
 
 
 @router.post("/respond", response_model=RespondResponse)
-async def respond(request: RespondRequest):
+async def respond(request: RespondRequest, user_id: str = Depends(get_current_user)):
     if request.session_id not in _manager.sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -58,7 +57,7 @@ async def respond(request: RespondRequest):
 
 
 @router.post("/end-session", response_model=EndSessionResponse)
-async def end_session(request: EndSessionRequest):
+async def end_session(request: EndSessionRequest, user_id: str = Depends(get_current_user)):
     if request.session_id not in _manager.sessions:
         raise HTTPException(status_code=404, detail="Session not found")
 

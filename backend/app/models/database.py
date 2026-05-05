@@ -1,14 +1,30 @@
 import json
-import aiosqlite
 from datetime import datetime
-from pathlib import Path
+from psycopg_pool import AsyncConnectionPool
+from app.config import get_settings
 
-DB_PATH = Path("hotseat.db")
+_pool: AsyncConnectionPool | None = None
+
+
+async def get_pool() -> AsyncConnectionPool:
+    global _pool
+    if _pool is None:
+        settings = get_settings()
+        _pool = AsyncConnectionPool(
+            settings.database_url,
+            open=False,
+            min_size=1,
+            max_size=5,
+            kwargs={"prepare_threshold": None, "sslmode": "require"},
+        )
+        await _pool.open(wait=True, timeout=15)
+    return _pool
 
 
 async def init_db():
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 session_id TEXT PRIMARY KEY,
                 persona TEXT NOT NULL,
@@ -20,46 +36,48 @@ async def init_db():
                 report TEXT
             )
         """)
-        await db.commit()
 
 
-async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
+async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = ""):
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute(
             """
-            INSERT OR REPLACE INTO sessions
-            (session_id, persona, repo_url, messages, turn_count, started_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (session_id) DO UPDATE SET
+                messages = EXCLUDED.messages,
+                turn_count = EXCLUDED.turn_count
             """,
-            (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat()),
+            (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id),
         )
-        await db.commit()
 
 
 async def update_session(session_id: str, messages: list, turn_count: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE sessions SET messages = ?, turn_count = ? WHERE session_id = ?",
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE sessions SET messages = %s, turn_count = %s WHERE session_id = %s",
             (json.dumps(messages), turn_count, session_id),
         )
-        await db.commit()
 
 
 async def save_report(session_id: str, report: dict):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE sessions SET report = ?, ended_at = ? WHERE session_id = ?",
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE sessions SET report = %s, ended_at = %s WHERE session_id = %s",
             (json.dumps(report), datetime.now().isoformat(), session_id),
         )
-        await db.commit()
 
 
 async def get_report(session_id: str) -> dict | None:
-    async with aiosqlite.connect(DB_PATH) as db:
-        async with db.execute(
-            "SELECT report FROM sessions WHERE session_id = ?", (session_id,)
-        ) as cursor:
-            row = await cursor.fetchone()
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        async with await conn.execute(
+            "SELECT report FROM sessions WHERE session_id = %s", (session_id,)
+        ) as cur:
+            row = await cur.fetchone()
             if row and row[0]:
                 return json.loads(row[0])
             return None

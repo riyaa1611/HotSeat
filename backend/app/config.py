@@ -7,6 +7,8 @@ class Settings(BaseSettings):
 
     groq_api_key: str = "test-key"
     github_token: str = ""
+    database_url: str = ""
+    supabase_jwt_secret: str = ""
     groq_model: str = "llama-3.1-70b-versatile"
     max_turns: int = 12
     wrap_up_turn: int = 10
