@@ -1,5 +1,7 @@
 import uuid
+import json
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from app.models.schemas import (
     StartSessionRequest, StartSessionResponse,
     RespondRequest, RespondResponse,
@@ -13,7 +15,6 @@ from app.services.evaluator import evaluate_session
 from app.auth import get_current_user
 
 router = APIRouter()
-
 _manager = SessionManager()
 
 
@@ -27,7 +28,7 @@ async def start_session(request: StartSessionRequest, user_id: str = Depends(get
     repo_context = build_context(parsed)
     session_id = str(uuid.uuid4())
 
-    _manager.start_session(session_id, request.persona, repo_context, request.repo_url)
+    _manager.start_session(session_id, request.persona, repo_context, request.repo_url, request.focus_areas)
 
     first_message_result = await _manager.respond(session_id, "__INIT__")
     first_message = first_message_result["response"]
@@ -54,6 +55,33 @@ async def respond(request: RespondRequest, user_id: str = Depends(get_current_us
     )
 
     return RespondResponse(**result)
+
+
+@router.post("/respond-stream")
+async def respond_stream(request: RespondRequest, user_id: str = Depends(get_current_user)):
+    if request.session_id not in _manager.sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    async def generate():
+        try:
+            async for chunk in _manager.stream_respond(request.session_id, request.message):
+                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+
+            meta = _manager.get_session_meta(request.session_id)
+            await update_session(
+                request.session_id,
+                _manager.get_messages(request.session_id),
+                meta["turn_count"],
+            )
+            yield f"data: {json.dumps({'done': True, **meta})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/end-session", response_model=EndSessionResponse)

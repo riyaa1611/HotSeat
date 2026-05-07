@@ -17,6 +17,7 @@ class ParseRepoResponse(BaseModel):
 class StartSessionRequest(BaseModel):
     repo_url: str
     persona: Literal["investor", "tech_lead", "hr_manager", "product_manager"]
+    focus_areas: list[str] = []
 
 
 class StartSessionResponse(BaseModel):

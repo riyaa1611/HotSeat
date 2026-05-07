@@ -36,11 +36,18 @@ export default function ChatWindow({ messages, persona, isLoading }) {
             </div>
             <div className={msg.role === "user" ? "msg-user" : "msg-persona"}
               style={{ fontSize: 15, lineHeight: 1.55, textAlign: "left", display: "inline-block", width: "100%" }}>
-              {msg.content}
+              {msg.content || (msg.streaming ? null : "—")}
+              {msg.streaming && (
+                <span style={{
+                  display: "inline-block", width: 2, height: "1em",
+                  background: "var(--accent-red)", marginLeft: 2,
+                  verticalAlign: "text-bottom", animation: "flicker 0.8s ease-in-out infinite",
+                }} />
+              )}
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && !messages.some((m) => m.streaming) && (
           <div className="fade-in" style={{ maxWidth: "80%" }}>
             <div className="mono" style={{
               fontSize: 10, color: "var(--text-muted)", marginBottom: 6,

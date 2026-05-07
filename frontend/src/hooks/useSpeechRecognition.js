@@ -1,32 +1,40 @@
 import { useState, useEffect, useRef } from "react";
 
-export function useSpeechRecognition({ onTranscript }) {
+export function useSpeechRecognition({ onTranscript, onAutoSend }) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef(null);
+  const autoSendTimer = useRef(null);
 
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      setIsSupported(true);
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = false;
-      recognition.lang = "en-US";
+    if (!SpeechRecognition) return;
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        onTranscript(transcript);
-        setIsListening(false);
-      };
+    setIsSupported(true);
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
 
-      recognition.onerror = () => setIsListening(false);
-      recognition.onend = () => setIsListening(false);
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      onTranscript(transcript);
+      setIsListening(false);
 
-      recognitionRef.current = recognition;
-    }
-  }, [onTranscript]);
+      if (onAutoSend) {
+        clearTimeout(autoSendTimer.current);
+        autoSendTimer.current = setTimeout(() => onAutoSend(transcript), 800);
+      }
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+
+    return () => clearTimeout(autoSendTimer.current);
+  }, [onTranscript, onAutoSend]);
 
   function toggleListening() {
     if (!recognitionRef.current) return;

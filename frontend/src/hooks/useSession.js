@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { respond, endSession } from "../services/api";
+import { respondStream, endSession } from "../services/api";
 import { supabase } from "../lib/supabase";
 
-export function useSession(sessionId) {
-  const [messages, setMessages] = useState([]);
+export function useSession(sessionId, initialMessage) {
+  const [messages, setMessages] = useState(() =>
+    initialMessage ? [{ role: "assistant", content: initialMessage, id: 0 }] : []
+  );
   const [turnCount, setTurnCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isFinal, setIsFinal] = useState(false);
@@ -14,36 +16,26 @@ export function useSession(sessionId) {
     setMessages((prev) => [...prev, { role, content, id: Date.now() + Math.random() }]);
   }
 
-  // Realtime subscription — syncs messages from DB as they're saved
+  // Realtime subscription
   useEffect(() => {
     if (!sessionId) return;
-
     const channel = supabase
       .channel(`session:${sessionId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "sessions",
-          filter: `session_id=eq.${sessionId}`,
-        },
-        (payload) => {
-          try {
-            const dbMessages = JSON.parse(payload.new.messages);
-            setMessages(
-              dbMessages
-                .filter((m) => m.role !== "system")
-                .map((m, i) => ({ role: m.role, content: m.content, id: i }))
-            );
-            setTurnCount(payload.new.turn_count ?? 0);
-          } catch {
-            // ignore parse errors
-          }
-        }
-      )
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "sessions",
+        filter: `session_id=eq.${sessionId}`,
+      }, (payload) => {
+        try {
+          const dbMessages = JSON.parse(payload.new.messages);
+          setMessages(
+            dbMessages
+              .filter((m) => m.role !== "system")
+              .map((m, i) => ({ role: m.role, content: m.content, id: i }))
+          );
+          setTurnCount(payload.new.turn_count ?? 0);
+        } catch { /* ignore */ }
+      })
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   }, [sessionId]);
 
@@ -52,17 +44,31 @@ export function useSession(sessionId) {
     addMessage("user", text);
     setIsLoading(true);
     setError("");
-    try {
-      const result = await respond(sessionId, text);
-      // Realtime will sync the full message list; HTTP response gives metadata
-      setTurnCount(result.turn_count);
-      setIsFinal(result.is_final);
-      if (!result.is_final) addMessage("assistant", result.response);
-    } catch (e) {
-      setError("Failed to get response. Check your connection.");
-    } finally {
-      setIsLoading(false);
-    }
+
+    // Add streaming placeholder
+    const streamId = Date.now() + Math.random();
+    setMessages((prev) => [...prev, { role: "assistant", content: "", id: streamId, streaming: true }]);
+
+    await respondStream(sessionId, text, {
+      onChunk: (chunk) => {
+        setMessages((prev) =>
+          prev.map((m) => m.id === streamId ? { ...m, content: m.content + chunk } : m)
+        );
+      },
+      onDone: (data) => {
+        setMessages((prev) =>
+          prev.map((m) => m.id === streamId ? { ...m, streaming: false } : m)
+        );
+        setTurnCount(data.turn_count);
+        setIsFinal(data.is_final);
+        setIsLoading(false);
+      },
+      onError: (err) => {
+        setMessages((prev) => prev.filter((m) => m.id !== streamId));
+        setError(err || "Failed to get response. Check your connection.");
+        setIsLoading(false);
+      },
+    });
   }, [sessionId, isLoading]);
 
   const finish = useCallback(async () => {
@@ -70,7 +76,7 @@ export function useSession(sessionId) {
     try {
       const result = await endSession(sessionId);
       setReport(result.report);
-    } catch (e) {
+    } catch {
       setError("Failed to generate report.");
     } finally {
       setIsLoading(false);

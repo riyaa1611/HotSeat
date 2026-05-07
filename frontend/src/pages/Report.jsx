@@ -73,7 +73,7 @@ function FeedbackCard({ title, tone, icon: IconC, items }) {
 export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { report, persona, repoUrl } = location.state || {};
+  const { report, persona, repoUrl, violations = [] } = location.state || {};
 
   if (!report) {
     return (
@@ -196,6 +196,37 @@ export default function Report() {
           </div>
         </div>
 
+        {/* Integrity report */}
+        <div className="section-divider"><span>Session Integrity</span></div>
+        <div style={{
+          background: "var(--bg-card)", border: "1px solid var(--border-default)",
+          borderLeft: `3px solid ${violations.length === 0 ? "var(--accent-green)" : "var(--accent-red)"}`,
+          padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16,
+        }}>
+          <div style={{ flex: 1 }}>
+            <div className="mono" style={{
+              fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", marginBottom: 10,
+              color: violations.length === 0 ? "var(--accent-green)" : "var(--accent-red)",
+            }}>
+              {violations.length === 0 ? "✓ Clean Session" : `${violations.length} Integrity Flag${violations.length > 1 ? "s" : ""}`}
+            </div>
+            {violations.length === 0 ? (
+              <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>No violations detected. Full credit.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {violations.map((v, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, fontSize: 13, color: "var(--text-secondary)" }}>
+                    <span className="mono" style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, paddingTop: 2 }}>
+                      {new Date(v.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                    </span>
+                    <span>{v.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* CTAs */}
         <div style={{ marginTop: 48, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <button className="btn btn-primary btn-large" onClick={() => navigate("/")}>
@@ -203,6 +234,16 @@ export default function Report() {
           </button>
           <button className="btn btn-large" onClick={() => navigate("/")}>
             <RefreshIcon /> Switch Persona
+          </button>
+          <button className="btn btn-large" onClick={() => {
+            const encoded = btoa(JSON.stringify({ report, persona, repoUrl }));
+            const url = `${window.location.origin}/report/shared#${encoded}`;
+            navigator.clipboard.writeText(url).then(() => alert("Share link copied!"));
+          }}>
+            Share Report
+          </button>
+          <button className="btn btn-ghost" onClick={() => navigate("/history")} style={{ fontSize: 13 }}>
+            History
           </button>
         </div>
       </main>

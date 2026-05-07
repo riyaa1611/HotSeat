@@ -11,7 +11,7 @@ PRIORITY_FILES = [
 
 def extract_owner_repo(repo_url: str) -> tuple[str, str]:
     """Extract (owner, repo) from a GitHub URL."""
-    pattern = r"https://github\.com/([^/]+)/([^/]+?)(?:/.*)?$"
+    pattern = r"https://github\.com/([^/]+)/([^/]+?)(?:\.git)?(?:/.*)?$"
     match = re.match(pattern, repo_url.rstrip("/"))
     if not match:
         raise ValueError(f"Invalid GitHub URL: {repo_url}")
@@ -28,21 +28,25 @@ async def parse_repo(repo_url: str) -> dict:
         headers["Authorization"] = f"token {settings.github_token}"
 
     async with httpx.AsyncClient(timeout=30.0) as client:
+        # 0. Repo metadata — get default branch
+        meta_resp = await client.get(base, headers={**headers, "Accept": "application/vnd.github+json"})
+        default_branch = meta_resp.json().get("default_branch", "main") if meta_resp.status_code == 200 else "main"
+
         # 1. README
         readme_resp = await client.get(f"{base}/readme", headers=headers)
         readme = readme_resp.text[:4000] if readme_resp.status_code == 200 else "No README found."
 
-        # 2. File tree — try main, fallback to master
-        tree_resp = await client.get(
-            f"{base}/git/trees/main?recursive=1",
-            headers={**headers, "Accept": "application/vnd.github+json"},
-        )
-        if tree_resp.status_code != 200:
+        # 2. File tree — use default branch, fallback to main/master
+        branches = [default_branch, "main", "master"]
+        raw_tree = []
+        for branch in dict.fromkeys(branches):  # deduplicate preserving order
             tree_resp = await client.get(
-                f"{base}/git/trees/master?recursive=1",
+                f"{base}/git/trees/{branch}?recursive=1",
                 headers={**headers, "Accept": "application/vnd.github+json"},
             )
-        raw_tree = tree_resp.json().get("tree", []) if tree_resp.status_code == 200 else []
+            if tree_resp.status_code == 200:
+                raw_tree = tree_resp.json().get("tree", [])
+                break
         file_tree = [f["path"] for f in raw_tree if f["type"] == "blob"][:200]
 
         # 3. Key files

@@ -1,6 +1,6 @@
 from datetime import datetime
 from app.services.prompt_engine import get_persona_prompt
-from app.services.groq_client import chat as groq_chat
+from app.services.groq_client import chat as groq_chat, stream_chat as groq_stream_chat
 from app.config import get_settings
 
 WRAP_UP_INJECTION = {
@@ -15,9 +15,10 @@ class SessionManager:
     def __init__(self):
         self.sessions: dict = {}
 
-    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str):
-        settings = get_settings()
+    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None):
         system_prompt = get_persona_prompt(persona, repo_context)
+        if focus_areas:
+            system_prompt += f"\n\nUSER-SPECIFIED FOCUS AREAS — prioritize questions on these topics: {', '.join(focus_areas)}."
         self.sessions[session_id] = {
             "messages": [{"role": "system", "content": system_prompt}],
             "persona": persona,
@@ -30,13 +31,11 @@ class SessionManager:
         session = self.sessions[session_id]
         settings = get_settings()
 
-        # __INIT__ means: get opening message from persona (no user message added)
         if user_message == "__INIT__":
             response = await groq_chat(session["messages"])
             session["messages"].append({"role": "assistant", "content": response})
             return {"response": response, "turn_count": 0, "is_final": False}
 
-        # Handle empty/gibberish messages
         if not user_message or not user_message.strip():
             return {"response": EMPTY_ANSWER_RESPONSE, "turn_count": session["turn_count"], "is_final": False}
 
@@ -51,6 +50,35 @@ class SessionManager:
 
         return {
             "response": response,
+            "turn_count": session["turn_count"],
+            "is_final": session["turn_count"] >= settings.max_turns,
+        }
+
+    async def stream_respond(self, session_id: str, user_message: str):
+        session = self.sessions[session_id]
+        settings = get_settings()
+
+        if not user_message or not user_message.strip():
+            yield EMPTY_ANSWER_RESPONSE
+            return
+
+        session["messages"].append({"role": "user", "content": user_message})
+        session["turn_count"] += 1
+
+        if session["turn_count"] >= settings.wrap_up_turn:
+            session["messages"].append(WRAP_UP_INJECTION)
+
+        full_response = ""
+        async for chunk in groq_stream_chat(session["messages"]):
+            full_response += chunk
+            yield chunk
+
+        session["messages"].append({"role": "assistant", "content": full_response})
+
+    def get_session_meta(self, session_id: str) -> dict:
+        session = self.sessions[session_id]
+        settings = get_settings()
+        return {
             "turn_count": session["turn_count"],
             "is_final": session["turn_count"] >= settings.max_turns,
         }

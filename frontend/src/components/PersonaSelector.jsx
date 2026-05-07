@@ -35,9 +35,9 @@ export default function PersonaSelector({ selected, onChange }) {
   return (
     <div>
       <div className="section-divider"><span>02 · Choose Your Interrogator</span></div>
-      <div style={{
+      <div className="persona-grid" style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gridTemplateColumns: "repeat(4, 1fr)",
         gap: 14,
       }}>
         {PERSONAS.map((p, i) => (

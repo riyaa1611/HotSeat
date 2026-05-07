@@ -10,8 +10,13 @@ function MicIcon({ size = 20, color = "currentColor", filled = false }) {
 export default function VoiceInput({ isListening, isSupported, onToggle }) {
   if (!isSupported) {
     return (
-      <div className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.16em", textTransform: "uppercase", alignSelf: "center" }}>
-        ⚠ Voice requires Chrome
+      <div style={{ display: "flex", alignItems: "center", gap: 5, alignSelf: "center" }}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.16em", textTransform: "uppercase" }}>Voice requires Chrome</span>
       </div>
     );
   }
