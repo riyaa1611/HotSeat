@@ -5,6 +5,11 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef(null);
   const autoSendTimer = useRef(null);
+  const onTranscriptRef = useRef(onTranscript);
+  const onAutoSendRef = useRef(onAutoSend);
+
+  useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
+  useEffect(() => { onAutoSendRef.current = onAutoSend; }, [onAutoSend]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -19,12 +24,12 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
 
     recognition.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
-      onTranscript(transcript);
+      onTranscriptRef.current?.(transcript);
       setIsListening(false);
 
-      if (onAutoSend) {
+      if (onAutoSendRef.current) {
         clearTimeout(autoSendTimer.current);
-        autoSendTimer.current = setTimeout(() => onAutoSend(transcript), 800);
+        autoSendTimer.current = setTimeout(() => onAutoSendRef.current(transcript), 800);
       }
     };
 
@@ -33,8 +38,11 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
 
     recognitionRef.current = recognition;
 
-    return () => clearTimeout(autoSendTimer.current);
-  }, [onTranscript, onAutoSend]);
+    return () => {
+      clearTimeout(autoSendTimer.current);
+      recognition.abort();
+    };
+  }, []); // create once — callbacks accessed via refs
 
   function toggleListening() {
     if (!recognitionRef.current) return;

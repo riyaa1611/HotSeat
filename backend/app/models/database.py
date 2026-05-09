@@ -33,9 +33,28 @@ async def init_db():
                 turn_count INTEGER DEFAULT 0,
                 started_at TEXT NOT NULL,
                 ended_at TEXT,
-                report TEXT
+                report TEXT,
+                user_id TEXT
             )
         """)
+        await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id TEXT")
+        await conn.execute("ALTER TABLE sessions ENABLE ROW LEVEL SECURITY")
+        # Idempotent policy: authenticated users see only their own rows
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY sessions_user_select ON sessions
+                FOR SELECT TO authenticated
+                USING (auth.uid()::text = user_id);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        # Enable realtime replication for in-session live updates
+        try:
+            await conn.execute(
+                "ALTER PUBLICATION supabase_realtime ADD TABLE sessions"
+            )
+        except Exception:
+            pass  # Already added or insufficient privilege — non-fatal
 
 
 async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = ""):

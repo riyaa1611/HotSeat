@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import ScoreCard from "../components/ScoreCard";
 import { Grain, Logo, RadarChartSVG, FlameIcon } from "../components/shared";
 
@@ -73,7 +74,8 @@ function FeedbackCard({ title, tone, icon: IconC, items }) {
 export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { report, persona, repoUrl, violations = [] } = location.state || {};
+  const { report, persona, repoUrl, violations = [], transcript = [] } = location.state || {};
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
 
   if (!report) {
     return (
@@ -114,7 +116,7 @@ export default function Report() {
         </button>
       </header>
 
-      <main style={{ flex: 1, maxWidth: 980, margin: "0 auto", width: "100%", padding: "48px 32px 80px" }}>
+      <main className="report-main" style={{ flex: 1, maxWidth: 980, margin: "0 auto", width: "100%", padding: "48px 32px 80px" }}>
         {/* Title */}
         <div style={{ textAlign: "center", marginBottom: 40 }}>
           <div className="mono" style={{ fontSize: 11, letterSpacing: "0.3em", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 14 }}>
@@ -131,7 +133,7 @@ export default function Report() {
         </div>
 
         {/* Score panel: overall + radar side by side */}
-        <div style={{
+        <div className="report-score-panel" style={{
           display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 1,
           background: "var(--border-default)", border: "1px solid var(--border-default)",
           marginBottom: 36,
@@ -164,14 +166,14 @@ export default function Report() {
         </div>
 
         {/* Score bars */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 24, marginBottom: 48 }}>
+        <div className="report-score-bars" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 24, marginBottom: 48 }}>
           {SCORE_KEYS.map(({ key, label }) => (
             <ScoreCard key={key} label={label} score={report[key]} />
           ))}
         </div>
 
         {/* Strengths + Weaknesses */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <div className="report-feedback-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
           <FeedbackCard title="What you did okay" tone="green" icon={CheckIcon} items={report.strengths} />
           <FeedbackCard title="Where you got cooked" tone="red" icon={XMark} items={report.weaknesses} />
         </div>
@@ -226,6 +228,52 @@ export default function Report() {
             )}
           </div>
         </div>
+
+        {/* Transcript */}
+        {transcript.length > 0 && (
+          <>
+            <div className="section-divider"><span>Session Transcript</span></div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)" }}>
+              <button
+                onClick={() => setTranscriptOpen((v) => !v)}
+                style={{
+                  width: "100%", padding: "16px 24px", background: "none", border: "none",
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  cursor: "pointer", color: "var(--text-primary)",
+                }}
+              >
+                <span className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  {transcript.length} messages
+                </span>
+                <span className="mono" style={{ fontSize: 10, color: "var(--text-muted)" }}>
+                  {transcriptOpen ? "▲ HIDE" : "▼ SHOW"}
+                </span>
+              </button>
+              {transcriptOpen && (
+                <div style={{ borderTop: "1px solid var(--border-default)", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+                  {transcript.map((msg, i) => (
+                    <div key={i} style={{
+                      display: "flex", flexDirection: "column", gap: 4,
+                      alignItems: msg.role === "user" ? "flex-end" : "flex-start",
+                    }}>
+                      <span className="mono" style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: msg.role === "user" ? "var(--text-muted)" : "var(--accent-red)" }}>
+                        {msg.role === "user" ? "You" : personaLabel}
+                      </span>
+                      <div style={{
+                        background: msg.role === "user" ? "var(--bg-input)" : "#1E1E22",
+                        borderLeft: msg.role === "assistant" ? "2px solid var(--accent-red)" : "none",
+                        padding: "12px 16px", fontSize: 13, lineHeight: 1.6,
+                        maxWidth: "80%", color: "var(--text-primary)",
+                      }}>
+                        {msg.content}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* CTAs */}
         <div style={{ marginTop: 48, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

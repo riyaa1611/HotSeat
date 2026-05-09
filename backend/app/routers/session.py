@@ -9,6 +9,7 @@ from app.models.schemas import (
 )
 from app.models.database import save_session, update_session, save_report
 from app.services.repo_parser import parse_repo
+from app.services.url_scraper import scrape_url
 from app.services.context_builder import build_context
 from app.services.conversation import SessionManager
 from app.services.evaluator import evaluate_session
@@ -21,9 +22,24 @@ _manager = SessionManager()
 @router.post("/start-session", response_model=StartSessionResponse)
 async def start_session(request: StartSessionRequest, user_id: str = Depends(get_current_user)):
     try:
-        parsed = await parse_repo(request.repo_url)
+        is_github = "github.com" in request.repo_url
+        if is_github:
+            parsed = await parse_repo(request.repo_url)
+        else:
+            scraped = await scrape_url(request.repo_url)
+            github_url = scraped.get("github_url")
+            if github_url:
+                try:
+                    parsed = await parse_repo(github_url)
+                except Exception:
+                    parsed = scraped
+            else:
+                parsed = scraped
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    if request.description:
+        parsed["readme"] = parsed.get("readme", "") + f"\n\n## User Description\n{request.description}"
 
     repo_context = build_context(parsed)
     session_id = str(uuid.uuid4())

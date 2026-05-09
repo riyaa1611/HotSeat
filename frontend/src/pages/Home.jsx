@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import RepoInput from "../components/RepoInput";
 import PersonaSelector from "../components/PersonaSelector";
 import FocusAreaSelector from "../components/FocusAreaSelector";
-import { parseRepo, startSession } from "../services/api";
-import { Grain, Logo, FlameIcon } from "../components/shared";
+import { parseRepo, parseUrl, startSession } from "../services/api";
+import { Grain, Logo, FlameIcon, LogoutButton, ThemeToggle } from "../components/shared";
 
 function Stat({ label, value, tone }) {
   const color = tone === "amber" ? "var(--accent-amber)" : "var(--text-primary)";
@@ -25,19 +25,23 @@ export default function Home() {
   const [isParsing, setIsParsing] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
 
-  async function handleParseRepo(url) {
-    setError(""); setIsParsing(true); setParsedRepo(null); setRepoUrl(url);
-    try { setParsedRepo(await parseRepo(url)); }
-    catch (e) { setError(e.response?.data?.detail || "Failed to parse repo. Is it public?"); }
-    finally { setIsParsing(false); }
+  async function handleParseRepo(url, mode = "github", description = "") {
+    setError(""); setIsParsing(true); setParsedRepo(null); setRepoUrl(url); setProjectDescription(description);
+    try {
+      const result = mode === "url" ? await parseUrl(url, description) : await parseRepo(url);
+      setParsedRepo(result);
+    } catch (e) {
+      setError(e.response?.data?.detail || (mode === "url" ? "Failed to fetch URL. Is it publicly accessible?" : "Failed to parse repo. Is it public?"));
+    } finally { setIsParsing(false); }
   }
 
   async function handleStartSession() {
     if (!parsedRepo || !persona) return;
     setError(""); setIsStarting(true);
     try {
-      const { session_id, first_message } = await startSession(repoUrl, persona, focusAreas);
+      const { session_id, first_message } = await startSession(repoUrl, persona, focusAreas, projectDescription);
       navigate("/session", { state: { session_id, first_message, persona, repoUrl } });
     } catch (e) {
       setError(e.response?.data?.detail || "Failed to start session.");
@@ -52,7 +56,11 @@ export default function Home() {
       <Grain />
       <header className="page-header">
         <Logo size="sm" />
-        <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.18em", textTransform: "uppercase" }}>v1.0 · Beta</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.18em", textTransform: "uppercase" }}>v1.0 · Beta</div>
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
       </header>
 
       <main className="page-main">
@@ -87,7 +95,7 @@ export default function Home() {
               <span style={{ fontWeight: 700, fontSize: 16 }}>{parsedRepo.owner}/{parsedRepo.repo_name}</span>
             </div>
             <div className="stat-grid">
-              <Stat label="Files" value={parsedRepo.file_count} />
+              {parsedRepo.file_count > 0 && <Stat label="Files" value={parsedRepo.file_count} />}
               <Stat label="Stack" value={parsedRepo.tech_stack.slice(0, 3).join(" · ") || "—"} />
               <Stat label="Status" value="Ready" tone="amber" />
             </div>

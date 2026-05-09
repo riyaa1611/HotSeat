@@ -6,6 +6,11 @@ class ParseRepoRequest(BaseModel):
     repo_url: str
 
 
+class ParseUrlRequest(BaseModel):
+    project_url: str
+    description: str = ""
+
+
 class ParseRepoResponse(BaseModel):
     repo_name: str
     owner: str
@@ -18,6 +23,7 @@ class StartSessionRequest(BaseModel):
     repo_url: str
     persona: Literal["investor", "tech_lead", "hr_manager", "product_manager"]
     focus_areas: list[str] = []
+    description: str = ""
 
 
 class StartSessionResponse(BaseModel):

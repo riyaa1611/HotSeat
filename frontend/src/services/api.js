@@ -35,11 +35,17 @@ export async function parseRepo(repoUrl) {
   return data;
 }
 
-export async function startSession(repoUrl, persona, focusAreas = []) {
+export async function parseUrl(projectUrl, description = "") {
+  const { data } = await api.post("/parse-url", { project_url: projectUrl, description });
+  return data;
+}
+
+export async function startSession(repoUrl, persona, focusAreas = [], description = "") {
   const { data } = await api.post("/start-session", {
     repo_url: repoUrl,
     persona,
     focus_areas: focusAreas,
+    description,
   });
   return data;
 }
@@ -103,6 +109,7 @@ export async function getHistory() {
   const { data, error } = await supabase
     .from("sessions")
     .select("session_id, persona, repo_url, turn_count, started_at, ended_at, report")
+    .eq("user_id", session.user.id)
     .order("started_at", { ascending: false })
     .limit(30);
   if (error) return [];

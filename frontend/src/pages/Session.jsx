@@ -10,7 +10,8 @@ import { useAntiCheat } from "../hooks/useAntiCheat";
 import { useVisionProctoring } from "../hooks/useVisionProctoring";
 import { useTTS } from "../hooks/useTTS";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
-import { Grain, Logo } from "../components/shared";
+import { scoreConfidence } from "../hooks/useConfidence";
+import { Grain, Logo, ThemeToggle } from "../components/shared";
 
 const MAX_TURNS = 12;
 
@@ -61,6 +62,7 @@ export default function Session() {
   const navigate = useNavigate();
   const { session_id, first_message, persona, repoUrl } = location.state || {};
   const [input, setInput] = useState("");
+  const [isPaused, setIsPaused] = useState(false);
   const inputRef = useRef(null);
   const inputValueRef = useRef(""); // always holds latest input without stale closure
   inputValueRef.current = input;
@@ -121,7 +123,8 @@ export default function Session() {
   useEffect(() => {
     if (report) {
       if (document.fullscreenElement) document.exitFullscreen?.();
-      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current } });
+      const transcript = messages.filter((m) => m.role !== "system" && !m.streaming);
+      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript } });
     }
   }, [report, navigate, persona, repoUrl]);
 
@@ -154,6 +157,22 @@ export default function Session() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <Grain />
+
+      {/* Paused banner */}
+      {isPaused && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          background: "var(--accent-amber)", padding: "8px 16px",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+          fontSize: 13, fontWeight: 600, color: "#000",
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#000" stroke="none">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+          Session paused — click Resume to continue
+        </div>
+      )}
 
       {/* Offline banner */}
       {!isOnline && (
@@ -226,7 +245,7 @@ export default function Session() {
           <span className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.22em", textTransform: "uppercase" }}>Question</span>
           <span className="mono" style={{ fontWeight: 600, fontSize: 13 }}>{Math.min(turnCount, MAX_TURNS)} / {MAX_TURNS}</span>
         </div>
-        <Timer isRunning={!isFinal} />
+        <Timer isRunning={!isFinal} isPaused={isPaused} />
         <button
           className="btn btn-ghost"
           onClick={() => { setTTSEnabled((v) => { if (v) stopTTS(); return !v; }); }}
@@ -235,7 +254,16 @@ export default function Session() {
         >
           {ttsEnabled ? <VolumeIcon /> : <VolumeMuteIcon />}
         </button>
-        <button className="btn btn-ghost" onClick={finish} disabled={isLoading} style={{ padding: "8px 12px", fontSize: 12 }}>
+        <button
+          className="btn btn-ghost"
+          onClick={() => setIsPaused((v) => !v)}
+          style={{ padding: "8px 12px", fontSize: 11, color: isPaused ? "var(--accent-amber)" : "var(--text-primary)" }}
+          title="Pause / Resume session"
+        >
+          {isPaused ? "Resume" : "Pause"}
+        </button>
+        <ThemeToggle />
+        <button className="btn btn-ghost" onClick={finish} disabled={isLoading || isPaused} style={{ padding: "8px 12px", fontSize: 12 }}>
           End
         </button>
       </header>
@@ -263,7 +291,20 @@ export default function Session() {
       {!isFinal ? (
         <div style={{ borderTop: "1px solid var(--border-default)", background: "var(--bg-primary)", padding: "18px 24px" }}>
           <form onSubmit={handleSend}>
-            <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 10, alignItems: "stretch" }}>
+            {(() => {
+              const conf = scoreConfidence(input);
+              return conf && (
+                <div style={{ maxWidth: 760, margin: "0 auto 8px", display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ flex: 1, height: 2, background: "var(--bg-card)" }}>
+                    <div style={{ width: `${conf.score}%`, height: "100%", background: conf.color, transition: "width 200ms ease, background 200ms ease" }} />
+                  </div>
+                  <span className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: conf.color, flexShrink: 0 }}>
+                    {conf.label}
+                  </span>
+                </div>
+              );
+            })()}
+            <div className="session-input-row" style={{ maxWidth: 760, margin: "0 auto", display: "flex", gap: 10, alignItems: "stretch" }}>
               <div style={{ flex: 1, position: "relative" }}>
                 <textarea
                   ref={inputRef}
@@ -271,7 +312,7 @@ export default function Session() {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={isListening ? "Listening… (auto-sends on silence)" : "Type your answer, or hit the mic."}
                   rows={2}
-                  disabled={isLoading}
+                  disabled={isLoading || isPaused}
                   style={{
                     resize: "none", minHeight: 56,
                     borderColor: isListening ? "var(--accent-red)" : "var(--border-default)",
@@ -289,7 +330,7 @@ export default function Session() {
                 </div>
               </div>
               <VoiceInput isListening={isListening} isSupported={isSupported} onToggle={toggleListening} />
-              <button type="submit" className="btn btn-primary" disabled={!input.trim() || isLoading} style={{ minWidth: 100 }}>
+              <button type="submit" className="btn btn-primary" disabled={!input.trim() || isLoading || isPaused} style={{ minWidth: 100 }}>
                 <SendIcon /> Send
               </button>
             </div>
