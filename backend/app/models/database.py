@@ -90,6 +90,25 @@ async def save_report(session_id: str, report: dict):
         )
 
 
+async def get_session(session_id: str) -> dict | None:
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        async with await conn.execute(
+            "SELECT persona, repo_url, messages, turn_count, user_id FROM sessions WHERE session_id = %s",
+            (session_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if row:
+                return {
+                    "persona": row[0],
+                    "repo_url": row[1],
+                    "messages": json.loads(row[2]),
+                    "turn_count": row[3],
+                    "user_id": row[4] or "",
+                }
+            return None
+
+
 async def get_report(session_id: str) -> dict | None:
     pool = await get_pool()
     async with pool.connection() as conn:

@@ -15,7 +15,7 @@ class SessionManager:
     def __init__(self):
         self.sessions: dict = {}
 
-    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None):
+    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None, user_id: str = ""):
         system_prompt = get_persona_prompt(persona, repo_context)
         if focus_areas:
             system_prompt += f"\n\nUSER-SPECIFIED FOCUS AREAS — prioritize questions on these topics: {', '.join(focus_areas)}."
@@ -25,6 +25,7 @@ class SessionManager:
             "repo_url": repo_url,
             "turn_count": 0,
             "started_at": datetime.now(),
+            "user_id": user_id,
         }
 
     async def respond(self, session_id: str, user_message: str) -> dict:
@@ -81,6 +82,16 @@ class SessionManager:
         return {
             "turn_count": session["turn_count"],
             "is_final": session["turn_count"] >= settings.max_turns,
+        }
+
+    def restore_session(self, session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = ""):
+        self.sessions[session_id] = {
+            "messages": messages,
+            "persona": persona,
+            "repo_url": repo_url,
+            "turn_count": turn_count,
+            "started_at": datetime.now(),
+            "user_id": user_id,
         }
 
     def get_messages(self, session_id: str) -> list:

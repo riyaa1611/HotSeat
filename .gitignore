@@ -25,6 +25,7 @@ frontend/.env.*
 # Local workspace metadata
 .claude/
 .mcp.json
+docs/
 
 # Generated local data
 backend/*.db

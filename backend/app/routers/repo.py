@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from app.models.schemas import ParseRepoRequest, ParseRepoResponse, ParseUrlRequest
 from app.services.repo_parser import parse_repo
 from app.services.url_scraper import scrape_url
 from app.services.context_builder import build_context
+from app.auth import get_current_user
+from app.limiter import limiter
 
 router = APIRouter()
 
@@ -27,9 +29,10 @@ def detect_tech_stack(parsed: dict) -> list[str]:
 
 
 @router.post("/parse-url", response_model=ParseRepoResponse)
-async def parse_url_endpoint(request: ParseUrlRequest):
+@limiter.limit("20/minute")
+async def parse_url_endpoint(request: Request, body: ParseUrlRequest, _: str = Depends(get_current_user)):
     try:
-        scraped = await scrape_url(request.project_url)
+        scraped = await scrape_url(body.project_url)
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Failed to fetch URL: {str(e)}")
 
@@ -37,8 +40,8 @@ async def parse_url_endpoint(request: ParseUrlRequest):
     if github_url:
         try:
             parsed = await parse_repo(github_url)
-            if request.description:
-                parsed["readme"] += f"\n\n## User Description\n{request.description}"
+            if body.description:
+                parsed["readme"] += f"\n\n## User Description\n{body.description}"
             context = build_context(parsed)
             tech_stack = detect_tech_stack(parsed)
             return ParseRepoResponse(
@@ -51,8 +54,8 @@ async def parse_url_endpoint(request: ParseUrlRequest):
         except Exception:
             pass  # fall through to scraped content
 
-    if request.description:
-        scraped["readme"] += f"\n\n## User Description\n{request.description}"
+    if body.description:
+        scraped["readme"] += f"\n\n## User Description\n{body.description}"
 
     context = build_context(scraped)
     tech_stack = scraped.get("tech_stack", []) or _detect_tech_from_html(scraped["readme"])
@@ -72,9 +75,10 @@ def _detect_tech_from_html(text: str) -> list[str]:
 
 
 @router.post("/parse-repo", response_model=ParseRepoResponse)
-async def parse_repo_endpoint(request: ParseRepoRequest):
+@limiter.limit("20/minute")
+async def parse_repo_endpoint(request: Request, body: ParseRepoRequest, _: str = Depends(get_current_user)):
     try:
-        parsed = await parse_repo(request.repo_url)
+        parsed = await parse_repo(body.repo_url)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

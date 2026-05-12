@@ -1,6 +1,34 @@
 import re
+import socket
+import ipaddress
 import httpx
 from urllib.parse import urlparse
+
+_BLOCKED_NETS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),  # link-local / cloud metadata
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+]
+
+
+def _assert_safe_url(url: str) -> None:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Blocked scheme: {parsed.scheme!r}")
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("No hostname in URL")
+    try:
+        addr = ipaddress.ip_address(socket.gethostbyname(hostname))
+    except socket.gaierror as exc:
+        raise ValueError(f"Cannot resolve host: {hostname}") from exc
+    for net in _BLOCKED_NETS:
+        if addr in net:
+            raise ValueError(f"Blocked private/internal address: {addr}")
 
 URL_TECH_SIGNALS = {
     "react": "React", "vue": "Vue", "angular": "Angular",
@@ -59,6 +87,8 @@ def _extract_github_link(html: str) -> str | None:
 
 
 async def scrape_url(project_url: str) -> dict:
+    _assert_safe_url(project_url)
+
     parsed = urlparse(project_url)
     domain = parsed.netloc or parsed.path
     project_name = domain.replace("www.", "").split(".")[0].title()
@@ -68,8 +98,13 @@ async def scrape_url(project_url: str) -> dict:
         "Accept": "text/html",
     }
 
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=False) as client:
         resp = await client.get(project_url, headers=headers)
+        # Follow one redirect, but validate the target first
+        if resp.status_code in (301, 302, 303, 307, 308):
+            location = resp.headers.get("location", "")
+            _assert_safe_url(location)
+            resp = await client.get(location, headers=headers)
         resp.raise_for_status()
         html = resp.text
 

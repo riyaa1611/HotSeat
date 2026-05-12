@@ -91,9 +91,10 @@ async def test_start_session_and_respond():
 
 @pytest.mark.asyncio
 async def test_respond_unknown_session():
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        resp = await ac.post("/api/respond", json={
-            "session_id": "does-not-exist",
-            "message": "Hello",
-        })
+    with patch("app.routers.session.load_session_from_db", new_callable=AsyncMock, return_value=None):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            resp = await ac.post("/api/respond", json={
+                "session_id": "does-not-exist",
+                "message": "Hello",
+            })
     assert resp.status_code == 404

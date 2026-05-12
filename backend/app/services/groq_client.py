@@ -28,17 +28,26 @@ async def chat(
             await asyncio.sleep(base_delay * (2 ** attempt))
 
 
-async def stream_chat(messages: list[dict]):
+async def stream_chat(messages: list[dict], max_retries: int = 3, base_delay: float = 1.0):
     settings = get_settings()
-    async with AsyncGroq(api_key=settings.groq_api_key) as client:
-        stream = await client.chat.completions.create(
-            model=settings.groq_model,
-            messages=messages,
-            max_tokens=512,
-            temperature=0.85,
-            stream=True,
-        )
-        async for chunk in stream:
-            content = chunk.choices[0].delta.content
-            if content:
-                yield content
+    attempt = 0
+    while True:
+        try:
+            async with AsyncGroq(api_key=settings.groq_api_key) as client:
+                stream = await client.chat.completions.create(
+                    model=settings.groq_model,
+                    messages=messages,
+                    max_tokens=512,
+                    temperature=0.85,
+                    stream=True,
+                )
+                async for chunk in stream:
+                    content = chunk.choices[0].delta.content
+                    if content:
+                        yield content
+            return
+        except RateLimitError:
+            attempt += 1
+            if attempt >= max_retries:
+                raise
+            await asyncio.sleep(base_delay * (2 ** attempt))

@@ -7,15 +7,7 @@ const api = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 30000,
-});
-
-// Inject auth token
-api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    config.headers.Authorization = `Bearer ${session.access_token}`;
-  }
-  return config;
+  withCredentials: true,  // send httpOnly cookie on every request
 });
 
 // Retry on network errors (not 4xx/5xx)
@@ -56,17 +48,12 @@ export async function respond(sessionId, message) {
 }
 
 export async function respondStream(sessionId, message, { onChunk, onDone, onError } = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token || "";
-
   let res;
   try {
     res = await fetch(`${BASE_URL}/respond-stream`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",  // cookie auth — no Bearer header needed
       body: JSON.stringify({ session_id: sessionId, message }),
     });
   } catch (e) {

@@ -1,14 +1,19 @@
-from pydantic import BaseModel
-from typing import Literal
+from pydantic import BaseModel, Field
+from typing import Annotated, Literal
+
+_Url = Annotated[str, Field(max_length=500)]
+_ShortText = Annotated[str, Field(max_length=1000)]
+_Message = Annotated[str, Field(max_length=2000)]
+_FocusTag = Annotated[str, Field(max_length=100)]
 
 
 class ParseRepoRequest(BaseModel):
-    repo_url: str
+    repo_url: _Url
 
 
 class ParseUrlRequest(BaseModel):
-    project_url: str
-    description: str = ""
+    project_url: _Url
+    description: _ShortText = ""
 
 
 class ParseRepoResponse(BaseModel):
@@ -20,10 +25,10 @@ class ParseRepoResponse(BaseModel):
 
 
 class StartSessionRequest(BaseModel):
-    repo_url: str
+    repo_url: _Url
     persona: Literal["investor", "tech_lead", "hr_manager", "product_manager"]
-    focus_areas: list[str] = []
-    description: str = ""
+    focus_areas: Annotated[list[_FocusTag], Field(max_length=5)] = []
+    description: _ShortText = ""
 
 
 class StartSessionResponse(BaseModel):
@@ -33,7 +38,7 @@ class StartSessionResponse(BaseModel):
 
 class RespondRequest(BaseModel):
     session_id: str
-    message: str
+    message: _Message
 
 
 class RespondResponse(BaseModel):
