@@ -50,7 +50,7 @@ async def _validate_token(token: str) -> None:
 
 
 def _cookie_kwargs(secure: bool) -> dict:
-    return {"httponly": True, "secure": secure, "samesite": "lax"}
+    return {"httponly": True, "secure": secure, "samesite": "none" if secure else "lax"}
 
 
 @router.post("/auth/session")
