@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { Logo, ThemeToggle } from "../components/shared";
 
 function LiveDot() {
@@ -32,11 +31,6 @@ export default function Landing() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
-      <Helmet>
-        <title>HotSeat — Get grilled before the real thing</title>
-        <meta name="description" content="Drop your repo or project URL. Pick your interrogator. Survive 12 questions designed to find every weak spot in your pitch — so the real meeting doesn't." />
-        <link rel="canonical" href="https://hot-seat-iota.vercel.app/" />
-      </Helmet>
 
       {/* ── NAV ── */}
       <nav className="landing-nav">

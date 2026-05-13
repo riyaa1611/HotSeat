@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../context/AuthContext";
 import { Grain, Logo, ThemeToggle } from "../components/shared";
 
 const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "";
@@ -46,7 +47,12 @@ function Field({ label, children }) {
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [mode, setMode] = useState("login");
+
+  useEffect(() => {
+    if (user) navigate("/app", { replace: true });
+  }, [user]);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -101,7 +107,6 @@ export default function Auth() {
         ...captchaOptions,
       });
       if (error) { setError(error.message); resetCaptcha(); }
-      else navigate("/app");
     }
     setLoading(false);
   }

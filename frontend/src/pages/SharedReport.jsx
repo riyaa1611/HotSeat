@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import Report from "./Report";
 
 export default function SharedReport() {
@@ -63,13 +62,13 @@ function ReportInner({ location }) {
   const personaLabel = persona?.replace("_", " ") || "Interviewer";
   const repoShort = repoUrl?.split("/").slice(-1)[0] || "project";
 
+  useEffect(() => {
+    document.title = `HotSeat Report — ${repoShort} vs ${personaLabel} · ${report.overall}/10`;
+    return () => { document.title = "HotSeat — Get grilled before the real thing"; };
+  }, [repoShort, personaLabel, report.overall]);
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg-primary)", color: "var(--text-primary)" }}>
-      <Helmet>
-        <title>{`HotSeat Report — ${repoShort} vs ${personaLabel} · ${report.overall}/10`}</title>
-        <meta name="description" content={`Performance report for ${repoShort}: overall score ${report.overall}/10 against ${personaLabel} on HotSeat.`} />
-        <meta name="robots" content="noindex" />
-      </Helmet>
       <Grain />
       <header style={{ padding: "20px 32px", borderBottom: "1px solid var(--border-default)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Logo size="sm" />
