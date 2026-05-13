@@ -18,22 +18,24 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
 
     setIsSupported(true);
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
 
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      onTranscriptRef.current?.(transcript);
-      setIsListening(false);
-
-      if (onAutoSendRef.current) {
-        clearTimeout(autoSendTimer.current);
-        autoSendTimer.current = setTimeout(() => onAutoSendRef.current(transcript), 800);
+      let final = "";
+      let interim = "";
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) final += result[0].transcript + " ";
+        else interim += result[0].transcript;
       }
+      onTranscriptRef.current?.(final || interim);
     };
 
-    recognition.onerror = () => setIsListening(false);
+    recognition.onerror = (e) => {
+      if (e.error !== "aborted") setIsListening(false);
+    };
     recognition.onend = () => setIsListening(false);
 
     recognitionRef.current = recognition;

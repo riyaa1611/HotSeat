@@ -72,14 +72,7 @@ export default function Session() {
     useSession(session_id, first_message);
 
   const { isListening, isSupported, toggleListening } = useSpeechRecognition({
-    onTranscript: (text) => setInput((prev) => prev + text),
-    onAutoSend: async (transcript) => {
-      const full = (inputValueRef.current + transcript).trim();
-      if (!full || isLoading) return;
-      setInput("");
-      await sendMessage(full);
-      inputRef.current?.focus();
-    },
+    onTranscript: (text) => setInput(text),
   });
 
   const {
@@ -310,7 +303,7 @@ export default function Session() {
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={isListening ? "Listening… (auto-sends on silence)" : "Type your answer, or hit the mic."}
+                  placeholder={isListening ? "Listening… click mic or press M to stop, then Send." : "Type your answer, or hit the mic."}
                   rows={2}
                   disabled={isLoading || isPaused}
                   style={{
