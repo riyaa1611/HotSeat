@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /session
+Disallow: /report
+Disallow: /history
+Disallow: /auth
+
+Sitemap: https://hot-seat-iota.vercel.app/sitemap.xml
