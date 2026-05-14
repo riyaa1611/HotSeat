@@ -175,9 +175,13 @@ export default function Landing() {
 
       {/* ── MARQUEE ── */}
       <div className="landing-marquee">
-        {["No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report", "Works on any repo or URL", "Free to start", "No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report"].map((t, i) => (
-          <div key={i} className="landing-marquee-item">
-            <span style={{ color: "var(--accent-red)", marginRight: 10 }}>—</span>{t}
+        {[0, 1].map((copy) => (
+          <div key={copy} className="landing-marquee-track" aria-hidden={copy === 1 ? "true" : undefined}>
+            {["No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report", "Works on any repo or URL", "Free to start", "No mercy", "No shortcuts", "Real questions", "Real feedback"].map((t, i) => (
+              <div key={i} className="landing-marquee-item">
+                <span style={{ color: "var(--accent-red)", marginRight: 10 }}>—</span>{t}
+              </div>
+            ))}
           </div>
         ))}
       </div>

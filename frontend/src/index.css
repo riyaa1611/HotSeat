@@ -371,12 +371,24 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 }
 .landing-persona-card:hover::before { transform: scaleX(1); }
 
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 /* Marquee */
 .landing-marquee {
+  border-top: 1px solid var(--border-default);
   border-bottom: 1px solid var(--border-default);
   overflow: hidden; background: var(--bg-card);
   display: flex;
 }
+.landing-marquee-track {
+  display: flex; flex-shrink: 0;
+  animation: marquee-scroll 28s linear infinite;
+  width: max-content;
+}
+.landing-marquee:hover .landing-marquee-track { animation-play-state: paused; }
 .landing-marquee-item {
   padding: 16px 28px; border-right: 1px solid var(--border-default);
   font-family: 'JetBrains Mono', monospace; font-size: 11px;
