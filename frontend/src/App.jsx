@@ -8,6 +8,7 @@ import Report from "./pages/Report";
 import Auth from "./pages/Auth";
 import History from "./pages/History";
 import SharedReport from "./pages/SharedReport";
+import Privacy from "./pages/Privacy";
 
 function RootRoute() {
   const { user, loading } = useAuth();
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/session" element={<ProtectedRoute><Session /></ProtectedRoute>} />
           <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
           <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

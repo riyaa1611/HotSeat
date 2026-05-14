@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Logo, ThemeToggle } from "../components/shared";
 
 function LiveDot() {
@@ -218,6 +218,10 @@ export default function Landing() {
         <Logo size="sm" />
         <div className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
           No coddling. No participation trophies.
+        </div>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Link to="/privacy" className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none" }}>Privacy</Link>
+          <a href="mailto:gaurriya1611@gmail.com" className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none" }}>Contact</a>
         </div>
       </footer>
 
