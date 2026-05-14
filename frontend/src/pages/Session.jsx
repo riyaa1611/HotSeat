@@ -63,6 +63,7 @@ export default function Session() {
   const { session_id, first_message, persona, repoUrl } = location.state || {};
   const [input, setInput] = useState("");
   const [isPaused, setIsPaused] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const inputRef = useRef(null);
   const inputValueRef = useRef(""); // always holds latest input without stale closure
   inputValueRef.current = input;
@@ -95,10 +96,9 @@ export default function Session() {
   // Keyboard shortcut: M = toggle mic
   useEffect(() => {
     function onKey(e) {
-      if (e.key === "m" || e.key === "M") {
-        if (document.activeElement?.tagName === "TEXTAREA") return;
-        toggleListening();
-      }
+      if (document.activeElement?.tagName === "TEXTAREA") return;
+      if (e.key === "m" || e.key === "M") toggleListening();
+      if (e.key === "p" || e.key === "P") setIsPaused((v) => !v);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -256,10 +256,31 @@ export default function Session() {
           {isPaused ? "Resume" : "Pause"}
         </button>
         <ThemeToggle />
+        <button className="btn btn-ghost" onClick={() => setShowShortcuts(true)} style={{ padding: "8px 10px", fontSize: 11 }} title="Keyboard shortcuts">?</button>
         <button className="btn btn-ghost" onClick={finish} disabled={isLoading || isPaused} style={{ padding: "8px 12px", fontSize: 12 }}>
           End
         </button>
       </header>
+
+      {showShortcuts && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 200, display: "grid", placeItems: "center" }} onClick={() => setShowShortcuts(false)}>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-strong)", padding: "32px", minWidth: 320, maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 20 }}>Keyboard Shortcuts</div>
+            {[
+              ["M", "Toggle microphone"],
+              ["Enter", "Send answer"],
+              ["Shift + Enter", "New line in answer"],
+              ["P", "Pause / Resume"],
+            ].map(([key, desc]) => (
+              <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{desc}</span>
+                <kbd style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, background: "var(--bg-card-2)", border: "1px solid var(--border-strong)", padding: "3px 8px", letterSpacing: "0.06em" }}>{key}</kbd>
+              </div>
+            ))}
+            <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8, fontSize: 12 }} onClick={() => setShowShortcuts(false)}>Close</button>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div style={{ height: 2, background: "var(--bg-card)" }}>

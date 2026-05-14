@@ -217,6 +217,11 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   /* Session page */
   .session-input-row { flex-direction: column !important; }
   .session-input-row .btn { width: 100%; }
+  .session-header { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
+
+  /* Leaderboard */
+  .leaderboard-grid { grid-template-columns: 32px 1fr 90px 60px !important; }
+  .leaderboard-col-repo { display: none; }
 }
 
 /* ═══════════════════════════════════════

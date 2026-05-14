@@ -95,6 +95,11 @@ export async function respondStream(sessionId, message, { onChunk, onDone, onErr
   }
 }
 
+export async function getLeaderboard() {
+  const { data } = await api.get("/leaderboard");
+  return data.entries || [];
+}
+
 export async function endSession(sessionId) {
   const { data } = await api.post("/end-session", { session_id: sessionId });
   return data;

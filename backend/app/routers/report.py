@@ -1,8 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.models.database import get_report, get_session
+from app.models.database import get_report, get_session, get_leaderboard
 from app.auth import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/leaderboard")
+async def leaderboard_endpoint():
+    entries = await get_leaderboard(20)
+    return {"entries": entries}
 
 
 @router.get("/report/{session_id}")

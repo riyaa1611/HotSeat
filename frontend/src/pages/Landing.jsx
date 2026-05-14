@@ -220,6 +220,7 @@ export default function Landing() {
           No coddling. No participation trophies.
         </div>
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Link to="/leaderboard" className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none" }}>Leaderboard</Link>
           <Link to="/privacy" className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none" }}>Privacy</Link>
           <a href="mailto:gaurriya1611@gmail.com" className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.14em", textTransform: "uppercase", textDecoration: "none" }}>Contact</a>
         </div>

@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ScoreCard from "../components/ScoreCard";
-import { Grain, Logo, RadarChartSVG, FlameIcon } from "../components/shared";
+import { Grain, Logo, RadarChartSVG, FlameIcon, useToast, ToastContainer } from "../components/shared";
 
 const SCORE_KEYS = [
   { key: "clarity", label: "Clarity" },
@@ -76,6 +76,7 @@ export default function Report() {
   const navigate = useNavigate();
   const { report, persona, repoUrl, violations = [], transcript = [] } = location.state || {};
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const { toasts, toast } = useToast();
 
   if (!report) {
     return (
@@ -105,6 +106,7 @@ export default function Report() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <ToastContainer toasts={toasts} />
       <Grain />
       <header style={{
         padding: "20px 32px", borderBottom: "1px solid var(--border-default)",
@@ -286,7 +288,7 @@ export default function Report() {
           <button className="btn btn-large" onClick={() => {
             const encoded = btoa(JSON.stringify({ report, persona, repoUrl }));
             const url = `${window.location.origin}/report/shared#${encoded}`;
-            navigator.clipboard.writeText(url).then(() => alert("Share link copied!"));
+            navigator.clipboard.writeText(url).then(() => toast("Share link copied to clipboard!"));
           }}>
             Share Report
           </button>

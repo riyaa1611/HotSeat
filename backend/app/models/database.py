@@ -109,6 +109,34 @@ async def get_session(session_id: str) -> dict | None:
             return None
 
 
+async def get_leaderboard(limit: int = 20) -> list:
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        async with await conn.execute(
+            """
+            SELECT user_id, persona, repo_url, report, ended_at
+            FROM sessions
+            WHERE report IS NOT NULL AND ended_at IS NOT NULL
+            ORDER BY (report::json->>'overall')::float DESC, ended_at DESC
+            LIMIT %s
+            """,
+            (limit,),
+        ) as cur:
+            rows = await cur.fetchall()
+            result = []
+            for row in rows:
+                report = json.loads(row[3])
+                uid = row[0] or ""
+                result.append({
+                    "user": uid[:6] + "***" if uid else "anon",
+                    "persona": row[1],
+                    "repo": (row[2] or "").rstrip("/").split("/")[-1] or "project",
+                    "overall": report.get("overall"),
+                    "date": (row[4] or "")[:10],
+                })
+            return result
+
+
 async def get_report(session_id: str) -> dict | None:
     pool = await get_pool()
     async with pool.connection() as conn:

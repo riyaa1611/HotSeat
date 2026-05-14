@@ -1,7 +1,37 @@
 // frontend/src/components/shared.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+
+export function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const idRef = useRef(0);
+  const toast = useCallback((message, type = "success", duration = 3000) => {
+    const id = ++idRef.current;
+    setToasts((t) => [...t, { id, message, type }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), duration);
+  }, []);
+  return { toasts, toast };
+}
+
+export function ToastContainer({ toasts }) {
+  if (!toasts.length) return null;
+  return (
+    <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 999, display: "flex", flexDirection: "column", gap: 8 }}>
+      {toasts.map((t) => (
+        <div key={t.id} className="fade-in" style={{
+          background: t.type === "error" ? "var(--accent-red)" : "var(--bg-card-2)",
+          border: `1px solid ${t.type === "error" ? "var(--accent-red)" : "var(--border-strong)"}`,
+          borderLeft: `3px solid ${t.type === "error" ? "#fff" : "var(--accent-green)"}`,
+          padding: "12px 18px", fontSize: 13, color: "var(--text-primary)",
+          minWidth: 240, maxWidth: 340, boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+        }}>
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function useTheme() {
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "dark");
