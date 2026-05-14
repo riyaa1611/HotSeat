@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ScoreCard from "../components/ScoreCard";
 import { Grain, Logo, RadarChartSVG, FlameIcon, useToast, ToastContainer } from "../components/shared";
+import { submitFeedback } from "../services/api";
 
 const SCORE_KEYS = [
   { key: "clarity", label: "Clarity" },
@@ -74,9 +75,28 @@ function FeedbackCard({ title, tone, icon: IconC, items }) {
 export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { report, persona, repoUrl, violations = [], transcript = [] } = location.state || {};
+  const { report, persona, repoUrl, violations = [], transcript = [], session_id } = location.state || {};
   const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   const { toasts, toast } = useToast();
+
+  async function handleFeedback(e) {
+    e.preventDefault();
+    if (!feedbackRating || !session_id) return;
+    setFeedbackLoading(true);
+    try {
+      await submitFeedback(session_id, feedbackRating, feedbackComment);
+      setFeedbackDone(true);
+      toast("Thanks for your feedback!");
+    } catch {
+      toast("Couldn't save feedback — try again.", "error");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
 
   if (!report) {
     return (
@@ -272,6 +292,56 @@ export default function Report() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Feedback */}
+        {session_id && (
+          <>
+            <div className="section-divider"><span>Rate This Session</span></div>
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", padding: "28px 32px" }}>
+              {feedbackDone ? (
+                <div style={{ textAlign: "center", padding: "16px 0" }}>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🙏</div>
+                  <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent-green)" }}>Feedback saved</div>
+                </div>
+              ) : (
+                <form onSubmit={handleFeedback}>
+                  <div className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 16 }}>How was the session?</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s} type="button"
+                        onClick={() => setFeedbackRating(s)}
+                        style={{
+                          fontSize: 28, background: "none", border: "none",
+                          cursor: "pointer", padding: "4px 2px",
+                          opacity: feedbackRating >= s ? 1 : 0.25,
+                          transition: "opacity 0.15s, transform 0.1s",
+                          transform: feedbackRating === s ? "scale(1.2)" : "scale(1)",
+                        }}
+                      >⭐</button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={feedbackComment}
+                    onChange={(e) => setFeedbackComment(e.target.value)}
+                    placeholder="Anything to add? (optional)"
+                    rows={2}
+                    maxLength={1000}
+                    style={{ width: "100%", resize: "none", marginBottom: 14, fontSize: 13 }}
+                  />
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={!feedbackRating || feedbackLoading}
+                    style={{ padding: "10px 24px", fontSize: 13 }}
+                  >
+                    {feedbackLoading ? "Saving…" : "Submit Feedback"}
+                  </button>
+                </form>
               )}
             </div>
           </>

@@ -38,6 +38,7 @@ async def init_db():
             )
         """)
         await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id TEXT")
+        await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback TEXT")
         await conn.execute("ALTER TABLE sessions ENABLE ROW LEVEL SECURITY")
         # Idempotent policy: authenticated users see only their own rows
         await conn.execute("""
@@ -107,6 +108,15 @@ async def get_session(session_id: str) -> dict | None:
                     "user_id": row[4] or "",
                 }
             return None
+
+
+async def save_feedback(session_id: str, rating: int, comment: str) -> None:
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute(
+            "UPDATE sessions SET feedback = %s WHERE session_id = %s",
+            (json.dumps({"rating": rating, "comment": comment}), session_id),
+        )
 
 
 async def get_leaderboard(limit: int = 20) -> list:

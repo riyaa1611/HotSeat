@@ -95,6 +95,11 @@ export async function respondStream(sessionId, message, { onChunk, onDone, onErr
   }
 }
 
+export async function submitFeedback(sessionId, rating, comment = "") {
+  const { data } = await api.post("/feedback", { session_id: sessionId, rating, comment });
+  return data;
+}
+
 export async function getLeaderboard() {
   const { data } = await api.get("/leaderboard");
   return data.entries || [];

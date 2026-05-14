@@ -117,7 +117,7 @@ export default function Session() {
     if (report) {
       if (document.fullscreenElement) document.exitFullscreen?.();
       const transcript = messages.filter((m) => m.role !== "system" && !m.streaming);
-      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript } });
+      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript, session_id } });
     }
   }, [report, navigate, persona, repoUrl]);
 
