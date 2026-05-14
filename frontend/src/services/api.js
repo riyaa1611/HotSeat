@@ -40,12 +40,13 @@ export async function parseUrl(projectUrl, description = "") {
   return data;
 }
 
-export async function startSession(repoUrl, persona, focusAreas = [], description = "") {
+export async function startSession(repoUrl, persona, focusAreas = [], description = "", displayName = "") {
   const { data } = await api.post("/start-session", {
     repo_url: repoUrl,
     persona,
     focus_areas: focusAreas,
     description,
+    display_name: displayName,
   });
   return data;
 }

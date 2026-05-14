@@ -29,6 +29,7 @@ class StartSessionRequest(BaseModel):
     persona: Literal["investor", "tech_lead", "hr_manager", "product_manager"]
     focus_areas: Annotated[list[_FocusTag], Field(max_length=5)] = []
     description: _ShortText = ""
+    display_name: Annotated[str, Field(max_length=80)] = ""
 
 
 class StartSessionResponse(BaseModel):

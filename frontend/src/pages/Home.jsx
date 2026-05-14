@@ -5,6 +5,7 @@ import PersonaSelector from "../components/PersonaSelector";
 import FocusAreaSelector from "../components/FocusAreaSelector";
 import { parseRepo, parseUrl, startSession } from "../services/api";
 import { Grain, Logo, FlameIcon, LogoutButton, ThemeToggle } from "../components/shared";
+import { useAuth } from "../context/AuthContext";
 
 function Stat({ label, value, tone }) {
   const color = tone === "amber" ? "var(--accent-amber)" : "var(--text-primary)";
@@ -18,6 +19,7 @@ function Stat({ label, value, tone }) {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [persona, setPersona] = useState(null);
   const [focusAreas, setFocusAreas] = useState([]);
   const [parsedRepo, setParsedRepo] = useState(null);
@@ -41,7 +43,8 @@ export default function Home() {
     if (!parsedRepo || !persona) return;
     setError(""); setIsStarting(true);
     try {
-      const { session_id, first_message } = await startSession(repoUrl, persona, focusAreas, projectDescription);
+      const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split("@")[0] || "";
+      const { session_id, first_message } = await startSession(repoUrl, persona, focusAreas, projectDescription, displayName);
       navigate("/session", { state: { session_id, first_message, persona, repoUrl } });
     } catch (e) {
       setError(e.response?.data?.detail || "Failed to start session.");

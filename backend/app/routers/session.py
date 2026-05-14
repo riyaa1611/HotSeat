@@ -53,7 +53,7 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
 
     await save_session(
         session_id, body.persona, body.repo_url,
-        _manager.get_messages(session_id), 0, user_id,
+        _manager.get_messages(session_id), 0, user_id, body.display_name,
     )
 
     return StartSessionResponse(session_id=session_id, first_message=first_message)

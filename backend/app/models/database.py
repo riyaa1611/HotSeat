@@ -34,11 +34,13 @@ async def init_db():
                 started_at TEXT NOT NULL,
                 ended_at TEXT,
                 report TEXT,
-                user_id TEXT
+                user_id TEXT,
+                display_name TEXT
             )
         """)
         await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id TEXT")
         await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback TEXT")
+        await conn.execute("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS display_name TEXT")
         await conn.execute("ALTER TABLE sessions ENABLE ROW LEVEL SECURITY")
         # Idempotent policy: authenticated users see only their own rows
         await conn.execute("""
@@ -58,18 +60,18 @@ async def init_db():
             pass  # Already added or insufficient privilege — non-fatal
 
 
-async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = ""):
+async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = "", display_name: str = ""):
     pool = await get_pool()
     async with pool.connection() as conn:
         await conn.execute(
             """
-            INSERT INTO sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id, display_name)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (session_id) DO UPDATE SET
                 messages = EXCLUDED.messages,
                 turn_count = EXCLUDED.turn_count
             """,
-            (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id),
+            (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id, display_name),
         )
 
 
@@ -124,7 +126,7 @@ async def get_leaderboard(limit: int = 20) -> list:
     async with pool.connection() as conn:
         async with await conn.execute(
             """
-            SELECT user_id, persona, repo_url, report, ended_at
+            SELECT user_id, persona, repo_url, report, ended_at, display_name
             FROM sessions
             WHERE report IS NOT NULL AND ended_at IS NOT NULL
             ORDER BY (report::json->>'overall')::float DESC, ended_at DESC
@@ -137,8 +139,9 @@ async def get_leaderboard(limit: int = 20) -> list:
             for row in rows:
                 report = json.loads(row[3])
                 uid = row[0] or ""
+                name = (row[5] or "").strip()
                 result.append({
-                    "user": uid[:6] + "***" if uid else "anon",
+                    "user": name if name else (uid[:6] + "***" if uid else "anon"),
                     "persona": row[1],
                     "repo": (row[2] or "").rstrip("/").split("/")[-1] or "project",
                     "overall": report.get("overall"),
