@@ -152,25 +152,34 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── QUESTION STRIP — full width ── */}
-      <div className="landing-strip">
-        <span className="mono landing-strip-label">Real questions →</span>
-        <div className="landing-strip-pills">
-          {[
-            ["Investor", "\"What's your CAC and why should I believe that number?\""],
-            ["Tech Lead", "\"Where are the tests? Walk me through error handling.\""],
-            ["HR Manager", "\"That sounds rehearsed. What actually went wrong?\""],
-            ["PM", "\"Who asked for this? Name one specific user.\""],
-            ["Investor", "\"You and what army? Why this team?\""],
-            ["Tech Lead", "\"Did you actually write this or did ChatGPT?\""],
-          ].map(([role, q], i) => (
-            <div key={i} className="landing-pill">
-              <strong className="mono" style={{ color: "var(--accent-red)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 2 }}>{role}</strong>
-              {q}
+      {/* ── QUESTION STRIP — full width marquee ── */}
+      {(() => {
+        const pills = [
+          ["Investor", "\"What's your CAC and why should I believe that number?\""],
+          ["Tech Lead", "\"Where are the tests? Walk me through error handling.\""],
+          ["HR Manager", "\"That sounds rehearsed. What actually went wrong?\""],
+          ["PM", "\"Who asked for this? Name one specific user.\""],
+          ["Investor", "\"You and what army? Why this team?\""],
+          ["Tech Lead", "\"Did you actually write this or did ChatGPT?\""],
+        ];
+        const renderPills = (prefix) => pills.map(([role, q], i) => (
+          <div key={`${prefix}-${i}`} className="landing-pill" style={{ flexShrink: 0 }}>
+            <strong className="mono" style={{ color: "var(--accent-red)", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", display: "block", marginBottom: 2 }}>{role}</strong>
+            {q}
+          </div>
+        ));
+        return (
+          <div className="landing-strip">
+            <span className="mono landing-strip-label">Real questions →</span>
+            <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+              <div className="landing-marquee-track" style={{ animationDuration: "28s" }}>
+                {renderPills("a")}
+                {renderPills("b")}
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        );
+      })()}
 
       {/* ── HOW IT WORKS ── */}
       <section id="how" className="landing-section">

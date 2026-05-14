@@ -304,7 +304,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   border-bottom: 1px solid var(--border-default);
   padding: 18px 60px;
   display: flex; align-items: center; gap: 0;
-  overflow: hidden;
+  overflow: hidden; position: relative;
 }
 .landing-strip-label {
   font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
