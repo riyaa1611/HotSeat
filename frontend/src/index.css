@@ -381,12 +381,10 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   border-top: 1px solid var(--border-default);
   border-bottom: 1px solid var(--border-default);
   overflow: hidden; background: var(--bg-card);
-  display: flex;
 }
 .landing-marquee-track {
-  display: flex; flex-shrink: 0;
-  animation: marquee-scroll 28s linear infinite;
-  width: max-content;
+  display: flex; width: max-content;
+  animation: marquee-scroll 32s linear infinite;
 }
 .landing-marquee:hover .landing-marquee-track { animation-play-state: paused; }
 .landing-marquee-item {

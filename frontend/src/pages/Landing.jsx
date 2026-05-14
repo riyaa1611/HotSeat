@@ -174,17 +174,22 @@ export default function Landing() {
       </section>
 
       {/* ── MARQUEE ── */}
-      <div className="landing-marquee">
-        {[0, 1].map((copy) => (
-          <div key={copy} className="landing-marquee-track" aria-hidden={copy === 1 ? "true" : undefined}>
-            {["No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report", "Works on any repo or URL", "Free to start", "No mercy", "No shortcuts", "Real questions", "Real feedback"].map((t, i) => (
-              <div key={i} className="landing-marquee-item">
-                <span style={{ color: "var(--accent-red)", marginRight: 10 }}>—</span>{t}
-              </div>
-            ))}
+      {(() => {
+        const items = ["No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report", "Works on any repo or URL", "Free to start", "No mercy", "No shortcuts", "Real questions", "Real feedback"];
+        const renderItems = (prefix) => items.map((t, i) => (
+          <div key={`${prefix}-${i}`} className="landing-marquee-item">
+            <span style={{ color: "var(--accent-red)", marginRight: 10 }}>—</span>{t}
           </div>
-        ))}
-      </div>
+        ));
+        return (
+          <div className="landing-marquee">
+            <div className="landing-marquee-track">
+              {renderItems("a")}
+              {renderItems("b")}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PROOF ── */}
       <section id="proof" className="landing-section">
