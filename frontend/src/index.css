@@ -338,6 +338,20 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 }
 .landing-step {
   background: var(--bg-primary); padding: 36px 32px;
+  transition: background 0.2s ease, transform 0.2s ease;
+  cursor: default;
+}
+.landing-step:hover {
+  background: var(--bg-card);
+  transform: translateY(-4px);
+}
+.landing-step:hover > div:first-child {
+  color: var(--accent-red);
+  transition: color 0.2s ease;
+}
+.landing-step:hover > div:nth-child(2) {
+  border-color: var(--accent-red);
+  transition: border-color 0.2s ease;
 }
 
 /* Personas */
