@@ -1,8 +1,8 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ScoreCard from "../components/ScoreCard";
 import { Grain, Logo, RadarChartSVG, FlameIcon, useToast, ToastContainer } from "../components/shared";
-import { submitFeedback } from "../services/api";
+import { submitFeedback, getHistory } from "../services/api";
 
 const SCORE_KEYS = [
   { key: "clarity", label: "Clarity" },
@@ -81,7 +81,16 @@ export default function Report() {
   const [feedbackComment, setFeedbackComment] = useState("");
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [prevOverall, setPrevOverall] = useState(null);
   const { toasts, toast } = useToast();
+
+  useEffect(() => {
+    if (!report) return;
+    getHistory().then((history) => {
+      const prev = history.find((s) => s.session_id !== session_id && s.report?.overall != null);
+      if (prev) setPrevOverall(prev.report.overall);
+    }).catch(() => {});
+  }, []);
 
   async function handleFeedback(e) {
     e.preventDefault();
@@ -173,6 +182,15 @@ export default function Report() {
             <div style={{ marginTop: 14, fontSize: 13, color: overallColor, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               · {overallLabel}
             </div>
+            {prevOverall !== null && (() => {
+              const delta = +(report.overall - prevOverall).toFixed(1);
+              const deltaColor = delta > 0 ? "var(--accent-green)" : delta < 0 ? "var(--accent-red)" : "var(--text-muted)";
+              return (
+                <div className="mono" style={{ marginTop: 12, fontSize: 11, color: deltaColor, letterSpacing: "0.12em" }}>
+                  {delta > 0 ? "▲" : delta < 0 ? "▼" : "─"} {delta > 0 ? "+" : ""}{delta} vs last session
+                </div>
+              );
+            })()}
           </div>
           <div style={{ background: "var(--bg-card)", padding: "24px 16px", position: "relative" }}>
             <div className="mono" style={{

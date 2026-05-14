@@ -15,6 +15,23 @@ import { Grain, Logo, ThemeToggle } from "../components/shared";
 
 const MAX_TURNS = 12;
 
+function playSendClick() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(900, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.07);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.07);
+  } catch { /* AudioContext not available */ }
+}
+
 const PERSONA_TITLES = {
   investor: "INVESTOR",
   tech_lead: "TECH LEAD",
@@ -139,6 +156,7 @@ export default function Session() {
     e.preventDefault();
     const text = input.trim();
     if (!text || isLoading) return;
+    playSendClick();
     setInput("");
     await sendMessage(text);
     inputRef.current?.focus();

@@ -105,6 +105,11 @@ export async function getLeaderboard() {
   return data.entries || [];
 }
 
+export async function getStats() {
+  const { data } = await api.get("/stats");
+  return data;
+}
+
 export async function endSession(sessionId) {
   const { data } = await api.post("/end-session", { session_id: sessionId });
   return data;

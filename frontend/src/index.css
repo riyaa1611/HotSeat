@@ -87,6 +87,8 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pageFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.page-fade-in { animation: pageFadeIn 220ms ease-out both; }
 @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(226, 75, 74, 0.5); } 50% { box-shadow: 0 0 0 8px rgba(226, 75, 74, 0); } }
 @keyframes pulseDot { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
 @keyframes skeleton { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }

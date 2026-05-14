@@ -147,6 +147,16 @@ async def get_leaderboard(limit: int = 20) -> list:
             return result
 
 
+async def get_stats() -> dict:
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        async with await conn.execute(
+            "SELECT COUNT(*) FROM sessions WHERE report IS NOT NULL AND ended_at IS NOT NULL"
+        ) as cur:
+            row = await cur.fetchone()
+            return {"sessions_completed": int(row[0]) if row else 0}
+
+
 async def get_report(session_id: str) -> dict | None:
     pool = await get_pool()
     async with pool.connection() as conn:

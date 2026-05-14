@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from app.models.database import get_report, get_session, get_leaderboard, save_feedback
+from app.models.database import get_report, get_session, get_leaderboard, save_feedback, get_stats
 from app.auth import get_current_user
 
 router = APIRouter()
@@ -19,6 +19,11 @@ async def submit_feedback(body: FeedbackBody, user_id: str = Depends(get_current
         raise HTTPException(status_code=404, detail="Session not found")
     await save_feedback(body.session_id, body.rating, body.comment)
     return {"status": "ok"}
+
+
+@router.get("/stats")
+async def stats_endpoint():
+    return await get_stats()
 
 
 @router.get("/leaderboard")

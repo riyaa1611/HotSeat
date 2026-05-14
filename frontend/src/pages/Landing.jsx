@@ -1,8 +1,31 @@
 import { useNavigate, Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { Logo, ThemeToggle } from "../components/shared";
+import { getStats } from "../services/api";
 
 function LiveDot() {
   return <span style={{ width: 7, height: 7, background: "var(--accent-red)", borderRadius: "50%", display: "inline-block", flexShrink: 0, animation: "flicker 1.6s ease-in-out infinite" }} />;
+}
+
+function AnimatedStat({ target, prefix = "", label, active, duration = 1300 }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!active || target === 0) return;
+    const start = performance.now();
+    const tick = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setCount(Math.round(eased * target));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [active, target, duration]);
+  return (
+    <div>
+      <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em" }}>{prefix}{count}</div>
+      <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 2 }}>{label}</div>
+    </div>
+  );
 }
 
 function PulseRings() {
@@ -28,6 +51,21 @@ function PulseRings() {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const statsRef = useRef(null);
+  const [statsActive, setStatsActive] = useState(false);
+  const [sessionCount, setSessionCount] = useState(null);
+
+  useEffect(() => {
+    getStats().then((d) => setSessionCount(d.sessions_completed)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const el = statsRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { setStatsActive(true); obs.disconnect(); } }, { threshold: 0.4 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "var(--bg-primary)" }}>
@@ -74,13 +112,17 @@ export default function Landing() {
             </a>
           </div>
 
-          <div className="landing-stats">
-            {[["4", "Interrogators"], ["12", "Questions / session"], ["~8", "Minutes avg"], ["0", "Coddling"]].map(([n, l]) => (
-              <div key={l}>
-                <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em" }}>{n}</div>
-                <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 2 }}>{l}</div>
-              </div>
-            ))}
+          <div className="landing-stats" ref={statsRef}>
+            <AnimatedStat target={4} label="Interrogators" active={statsActive} />
+            <AnimatedStat target={12} label="Questions / session" active={statsActive} />
+            <AnimatedStat target={8} prefix="~" label="Minutes avg" active={statsActive} />
+            <div>
+              <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.03em" }}>0</div>
+              <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 2 }}>Coddling</div>
+            </div>
+            {sessionCount !== null && (
+              <AnimatedStat target={sessionCount} label="Sessions done" active={statsActive} duration={1800} />
+            )}
           </div>
         </div>
 

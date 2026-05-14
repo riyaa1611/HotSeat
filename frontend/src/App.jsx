@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
@@ -17,21 +17,30 @@ function RootRoute() {
   return user ? <Home /> : <Landing />;
 }
 
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <div key={location.key} className="page-fade-in">
+      <Routes location={location}>
+        <Route path="/" element={<RootRoute />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/report/shared" element={<SharedReport />} />
+        <Route path="/app" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/session" element={<ProtectedRoute><Session /></ProtectedRoute>} />
+        <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+      </Routes>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          <Route path="/" element={<RootRoute />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/report/shared" element={<SharedReport />} />
-          <Route path="/app" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-          <Route path="/session" element={<ProtectedRoute><Session /></ProtectedRoute>} />
-          <Route path="/report" element={<ProtectedRoute><Report /></ProtectedRoute>} />
-          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-        </Routes>
+        <AppRoutes />
       </AuthProvider>
     </BrowserRouter>
   );
