@@ -1,10 +1,12 @@
 import json
+import logging
 from datetime import datetime
 from psycopg_pool import AsyncConnectionPool
 from app.config import get_settings
 
 _pool: AsyncConnectionPool | None = None
 _sessions_columns_cache: set[str] | None = None
+logger = logging.getLogger(__name__)
 
 
 async def _get_sessions_columns(conn) -> set[str]:
@@ -75,6 +77,19 @@ async def init_db():
             )
         except Exception:
             pass  # Already added or insufficient privilege — non-fatal
+
+        cols = await _get_sessions_columns(conn)
+        required = {"session_id", "persona", "repo_url", "messages", "started_at"}
+        optional = {"display_name", "feedback", "report", "ended_at", "turn_count", "user_id"}
+        missing_required = sorted(required - cols)
+        missing_optional = sorted(optional - cols)
+        if missing_required:
+            logger.error("public.sessions is missing required columns: %s", ", ".join(missing_required))
+        if missing_optional:
+            logger.warning(
+                "public.sessions missing optional columns; compatibility mode active: %s",
+                ", ".join(missing_optional),
+            )
 
 
 async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = "", display_name: str = ""):
@@ -209,3 +224,4 @@ async def get_report(session_id: str) -> dict | None:
             if row and row[0]:
                 return json.loads(row[0])
             return None
+
