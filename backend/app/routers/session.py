@@ -1,5 +1,6 @@
 import uuid
 import json
+import logging
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
 from app.limiter import limiter
@@ -18,6 +19,7 @@ from app.auth import get_current_user
 
 router = APIRouter()
 _manager = SessionManager()
+logger = logging.getLogger(__name__)
 
 
 @router.post("/start-session", response_model=StartSessionResponse)
@@ -39,6 +41,12 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
                 parsed = scraped
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        logger.exception("start_session failed during project parsing")
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to prepare project context. Verify the repo/URL is reachable.",
+        )
 
     if body.description:
         parsed["readme"] = parsed.get("readme", "") + f"\n\n## User Description\n{body.description}"
@@ -46,15 +54,33 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
     repo_context = build_context(parsed)
     session_id = str(uuid.uuid4())
 
-    _manager.start_session(session_id, body.persona, repo_context, body.repo_url, body.focus_areas, user_id)
+    try:
+        _manager.start_session(session_id, body.persona, repo_context, body.repo_url, body.focus_areas, user_id)
+    except Exception:
+        logger.exception("start_session failed while creating in-memory session")
+        raise HTTPException(status_code=500, detail="Failed to initialize interview session.")
 
-    first_message_result = await _manager.respond(session_id, "__INIT__")
-    first_message = first_message_result["response"]
+    try:
+        first_message_result = await _manager.respond(session_id, "__INIT__")
+        first_message = first_message_result["response"]
+    except Exception:
+        logger.exception("start_session failed while generating first AI question")
+        raise HTTPException(
+            status_code=502,
+            detail="Failed to generate the first question. Check GROQ API key/model configuration.",
+        )
 
-    await save_session(
-        session_id, body.persona, body.repo_url,
-        _manager.get_messages(session_id), 0, user_id, body.display_name,
-    )
+    try:
+        await save_session(
+            session_id, body.persona, body.repo_url,
+            _manager.get_messages(session_id), 0, user_id, body.display_name,
+        )
+    except Exception:
+        logger.exception("start_session failed while saving session to database")
+        raise HTTPException(
+            status_code=500,
+            detail="Session was created but could not be saved. Check database connectivity and schema.",
+        )
 
     return StartSessionResponse(session_id=session_id, first_message=first_message)
 
