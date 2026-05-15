@@ -70,13 +70,23 @@ async def init_db():
             EXCEPTION WHEN duplicate_object THEN NULL;
             END $$
         """)
-        # Enable realtime replication for in-session live updates
-        try:
-            await conn.execute(
-                "ALTER PUBLICATION supabase_realtime ADD TABLE public.sessions"
-            )
-        except Exception:
-            pass  # Already added or insufficient privilege — non-fatal
+        # Enable realtime replication for in-session live updates.
+        # Use SQL-side exception handling so outer transaction is not aborted.
+        await conn.execute(
+            """
+            DO $$
+            BEGIN
+              BEGIN
+                ALTER PUBLICATION supabase_realtime ADD TABLE public.sessions;
+              EXCEPTION
+                WHEN duplicate_object THEN NULL;
+                WHEN insufficient_privilege THEN NULL;
+                WHEN undefined_object THEN NULL;
+                WHEN OTHERS THEN NULL;
+              END;
+            END $$;
+            """
+        )
 
         cols = await _get_sessions_columns(conn)
         required = {"session_id", "persona", "repo_url", "messages", "started_at"}
@@ -224,4 +234,5 @@ async def get_report(session_id: str) -> dict | None:
             if row and row[0]:
                 return json.loads(row[0])
             return None
+
 
