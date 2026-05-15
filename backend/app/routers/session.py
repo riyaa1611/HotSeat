@@ -75,11 +75,15 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
             session_id, body.persona, body.repo_url,
             _manager.get_messages(session_id), 0, user_id, body.display_name,
         )
-    except Exception:
+    except Exception as e:
         logger.exception("start_session failed while saving session to database")
+        err = f"{type(e).__name__}: {str(e)}".strip()
+        detail = "Session was created but could not be saved. Check database connectivity and schema."
+        if err:
+            detail = f"{detail} [{err[:220]}]"
         raise HTTPException(
             status_code=500,
-            detail="Session was created but could not be saved. Check database connectivity and schema.",
+            detail=detail,
         )
 
     return StartSessionResponse(session_id=session_id, first_message=first_message)

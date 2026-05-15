@@ -4,6 +4,23 @@ from psycopg_pool import AsyncConnectionPool
 from app.config import get_settings
 
 _pool: AsyncConnectionPool | None = None
+_sessions_columns_cache: set[str] | None = None
+
+
+async def _get_sessions_columns(conn) -> set[str]:
+    global _sessions_columns_cache
+    if _sessions_columns_cache is not None:
+        return _sessions_columns_cache
+    async with await conn.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'sessions'
+        """
+    ) as cur:
+        rows = await cur.fetchall()
+    _sessions_columns_cache = {r[0] for r in rows}
+    return _sessions_columns_cache
 
 
 async def get_pool() -> AsyncConnectionPool:
@@ -63,16 +80,29 @@ async def init_db():
 async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = "", display_name: str = ""):
     pool = await get_pool()
     async with pool.connection() as conn:
-        await conn.execute(
-            """
-            INSERT INTO public.sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id, display_name)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (session_id) DO UPDATE SET
-                messages = EXCLUDED.messages,
-                turn_count = EXCLUDED.turn_count
-            """,
-            (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id, display_name),
-        )
+        cols = await _get_sessions_columns(conn)
+        if "display_name" in cols:
+            await conn.execute(
+                """
+                INSERT INTO public.sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id, display_name)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (session_id) DO UPDATE SET
+                    messages = EXCLUDED.messages,
+                    turn_count = EXCLUDED.turn_count
+                """,
+                (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id, display_name),
+            )
+        else:
+            await conn.execute(
+                """
+                INSERT INTO public.sessions (session_id, persona, repo_url, messages, turn_count, started_at, user_id)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (session_id) DO UPDATE SET
+                    messages = EXCLUDED.messages,
+                    turn_count = EXCLUDED.turn_count
+                """,
+                (session_id, persona, repo_url, json.dumps(messages), turn_count, datetime.now().isoformat(), user_id),
+            )
 
 
 async def update_session(session_id: str, messages: list, turn_count: int):
@@ -124,16 +154,25 @@ async def save_feedback(session_id: str, rating: int, comment: str) -> None:
 async def get_leaderboard(limit: int = 20) -> list:
     pool = await get_pool()
     async with pool.connection() as conn:
-        async with await conn.execute(
+        cols = await _get_sessions_columns(conn)
+        if "display_name" in cols:
+            query = """
+                SELECT user_id, persona, repo_url, report, ended_at, display_name
+                FROM public.sessions
+                WHERE report IS NOT NULL AND ended_at IS NOT NULL
+                ORDER BY (report::json->>'overall')::float DESC, ended_at DESC
+                LIMIT %s
             """
-            SELECT user_id, persona, repo_url, report, ended_at, display_name
-            FROM public.sessions
-            WHERE report IS NOT NULL AND ended_at IS NOT NULL
-            ORDER BY (report::json->>'overall')::float DESC, ended_at DESC
-            LIMIT %s
-            """,
-            (limit,),
-        ) as cur:
+        else:
+            query = """
+                SELECT user_id, persona, repo_url, report, ended_at, '' AS display_name
+                FROM public.sessions
+                WHERE report IS NOT NULL AND ended_at IS NOT NULL
+                ORDER BY (report::json->>'overall')::float DESC, ended_at DESC
+                LIMIT %s
+            """
+
+        async with await conn.execute(query, (limit,)) as cur:
             rows = await cur.fetchall()
             result = []
             for row in rows:
