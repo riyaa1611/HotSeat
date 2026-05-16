@@ -7,6 +7,7 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
   const autoSendTimer = useRef(null);
   const onTranscriptRef = useRef(onTranscript);
   const onAutoSendRef = useRef(onAutoSend);
+  const shouldListenRef = useRef(false);
 
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onAutoSendRef.current = onAutoSend; }, [onAutoSend]);
@@ -34,14 +35,27 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
     };
 
     recognition.onerror = (e) => {
-      if (e.error !== "aborted") setIsListening(false);
+      if (e.error === "aborted") return;
+      // On no-speech or network errors, restart if user is still intending to listen
+      if (shouldListenRef.current) return;
+      setIsListening(false);
+      shouldListenRef.current = false;
     };
-    recognition.onend = () => setIsListening(false);
+
+    // Chrome fires onend after silence even with continuous=true — restart if user hasn't stopped
+    recognition.onend = () => {
+      if (shouldListenRef.current) {
+        try { recognition.start(); } catch {}
+      } else {
+        setIsListening(false);
+      }
+    };
 
     recognitionRef.current = recognition;
 
     return () => {
       clearTimeout(autoSendTimer.current);
+      shouldListenRef.current = false;
       recognition.abort();
     };
   }, []); // create once — callbacks accessed via refs
@@ -49,9 +63,11 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
   function toggleListening() {
     if (!recognitionRef.current) return;
     if (isListening) {
+      shouldListenRef.current = false;
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
+      shouldListenRef.current = true;
       recognitionRef.current.start();
       setIsListening(true);
     }
