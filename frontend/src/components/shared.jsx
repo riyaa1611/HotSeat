@@ -91,7 +91,7 @@ export function LogoutButton() {
   }
   return (
     <button className="btn btn-ghost" onClick={handleLogout}
-      style={{ padding: "6px 12px", fontSize: 11 }}>
+      style={{ padding: "6px 12px", fontSize: 14 }}>
       Sign Out
     </button>
   );
