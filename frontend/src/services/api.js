@@ -10,14 +10,6 @@ const api = axios.create({
   withCredentials: true,
 });
 
-api.interceptors.request.use(async (config) => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.access_token) {
-    config.headers["Authorization"] = `Bearer ${session.access_token}`;
-  }
-  return config;
-});
-
 // Retry on network errors (not 4xx/5xx)
 api.interceptors.response.use(
   (r) => r,
@@ -57,13 +49,11 @@ export async function respond(sessionId, message) {
 }
 
 export async function respondStream(sessionId, message, { onChunk, onDone, onError } = {}) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const authHeader = session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {};
   let res;
   try {
     res = await fetch(`${BASE_URL}/respond-stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...authHeader },
+      headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ session_id: sessionId, message }),
     });

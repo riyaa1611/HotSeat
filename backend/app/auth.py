@@ -10,13 +10,7 @@ _COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
 
 
 async def get_current_user(request: Request) -> str:
-    # Prefer Authorization header (works cross-origin), fall back to cookie
-    token = None
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-    if not token:
-        token = request.cookies.get(_COOKIE)
+    token = request.cookies.get(_COOKIE)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     settings = get_settings()
