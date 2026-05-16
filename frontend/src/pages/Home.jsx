@@ -60,8 +60,7 @@ export default function Home() {
       <header className="page-header">
         <Logo size="sm" />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.18em", textTransform: "uppercase" }}>v1.0 · Beta</div>
-          <Link to="/leaderboard" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 11 }}>Leaderboard</Link>
+<Link to="/leaderboard" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 11 }}>Leaderboard</Link>
           <ThemeToggle />
           <LogoutButton />
         </div>
