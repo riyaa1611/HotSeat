@@ -77,7 +77,6 @@ export default function Landing() {
           <a href="#how" className="landing-nav-link">How it works</a>
           <a href="#personas" className="landing-nav-link">Personas</a>
           <a href="#proof" className="landing-nav-link">Results</a>
-          <Link to="/leaderboard" className="landing-nav-link">Leaderboard</Link>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <ThemeToggle />

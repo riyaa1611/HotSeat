@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import RepoInput from "../components/RepoInput";
 import PersonaSelector from "../components/PersonaSelector";
 import FocusAreaSelector from "../components/FocusAreaSelector";
@@ -61,6 +61,7 @@ export default function Home() {
         <Logo size="sm" />
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.18em", textTransform: "uppercase" }}>v1.0 · Beta</div>
+          <Link to="/leaderboard" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 11 }}>Leaderboard</Link>
           <ThemeToggle />
           <LogoutButton />
         </div>
