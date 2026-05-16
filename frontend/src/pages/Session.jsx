@@ -80,6 +80,7 @@ export default function Session() {
   const { session_id, first_message, persona, repoUrl } = location.state || {};
   const [input, setInput] = useState("");
   const [isPaused, setIsPaused] = useState(false);
+  const [micOffToast, setMicOffToast] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const inputRef = useRef(null);
   const inputValueRef = useRef(""); // always holds latest input without stale closure
@@ -91,6 +92,10 @@ export default function Session() {
 
   const { isListening, isSupported, toggleListening } = useSpeechRecognition({
     onTranscript: (text) => setInput(text),
+    onSilenceTimeout: () => {
+      setMicOffToast(true);
+      setTimeout(() => setMicOffToast(false), 4000);
+    },
   });
 
   const {
@@ -199,6 +204,25 @@ export default function Session() {
             <line x1="12" y1="17" x2="12.01" y2="17" />
           </svg>
           No internet connection — your answer may not send
+        </div>
+      )}
+
+      {/* Mic silence timeout toast */}
+      {micOffToast && (
+        <div style={{
+          position: "fixed", bottom: 100, left: "50%", transform: "translateX(-50%)",
+          zIndex: 50, background: "var(--bg-card-2)",
+          border: "1px solid var(--border-default)", borderLeft: "3px solid var(--text-muted)",
+          padding: "12px 18px", display: "flex", alignItems: "center", gap: 12,
+          minWidth: 280, animation: "fadeIn 200ms ease-out",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+        }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+            <rect x="9" y="2" width="6" height="12" rx="3" />
+            <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" />
+            <line x1="2" y1="2" x2="22" y2="22" />
+          </svg>
+          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>Mic turned off — no speech detected for 1 minute.</span>
         </div>
       )}
 

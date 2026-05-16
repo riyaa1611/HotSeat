@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export function useSpeechRecognition({ onTranscript, onAutoSend }) {
+export function useSpeechRecognition({ onTranscript, onAutoSend, onSilenceTimeout }) {
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef(null);
@@ -8,12 +8,14 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
   const silenceTimer = useRef(null);
   const onTranscriptRef = useRef(onTranscript);
   const onAutoSendRef = useRef(onAutoSend);
+  const onSilenceTimeoutRef = useRef(onSilenceTimeout);
   const shouldListenRef = useRef(false);
 
   const SILENCE_TIMEOUT = 60_000;
 
   useEffect(() => { onTranscriptRef.current = onTranscript; }, [onTranscript]);
   useEffect(() => { onAutoSendRef.current = onAutoSend; }, [onAutoSend]);
+  useEffect(() => { onSilenceTimeoutRef.current = onSilenceTimeout; }, [onSilenceTimeout]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -32,6 +34,7 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
         shouldListenRef.current = false;
         recognition.stop();
         setIsListening(false);
+        onSilenceTimeoutRef.current?.();
       }, SILENCE_TIMEOUT);
     };
 
@@ -89,6 +92,7 @@ export function useSpeechRecognition({ onTranscript, onAutoSend }) {
         shouldListenRef.current = false;
         recognitionRef.current?.stop();
         setIsListening(false);
+        onSilenceTimeoutRef.current?.();
       }, SILENCE_TIMEOUT);
     }
   }
