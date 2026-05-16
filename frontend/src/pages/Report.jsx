@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ScoreCard from "../components/ScoreCard";
 import { Grain, Logo, RadarChartSVG, FlameIcon, useToast, ToastContainer } from "../components/shared";
@@ -142,9 +142,12 @@ export default function Report() {
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <Logo size="sm" />
-        <button className="btn btn-ghost" onClick={() => navigate("/")} style={{ padding: "8px 14px", fontSize: 12 }}>
-          <ArrowLeft /> Home
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link to="/leaderboard" className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 12 }}>Leaderboard</Link>
+          <button className="btn btn-ghost" onClick={() => navigate("/")} style={{ padding: "8px 14px", fontSize: 12 }}>
+            <ArrowLeft /> Home
+          </button>
+        </div>
       </header>
 
       <main className="report-main" style={{ flex: 1, maxWidth: 980, margin: "0 auto", width: "100%", padding: "48px 32px 80px" }}>
