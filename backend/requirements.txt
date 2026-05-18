@@ -13,3 +13,4 @@ pytest-mock==3.14.0
 anyio==4.4.0
 slowapi>=0.1.9
 pdfplumber>=0.11.0
+python-multipart>=0.0.9
