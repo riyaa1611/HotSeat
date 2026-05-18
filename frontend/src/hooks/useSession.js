@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { respondStream, endSession } from "../services/api";
 import { supabase } from "../lib/supabase";
+import { scoreConfidence } from "./useConfidence";
 
-export function useSession(sessionId, initialMessage) {
+export function useSession(sessionId, initialMessage, finishFn = endSession) {
   const [messages, setMessages] = useState(() =>
     initialMessage ? [{ role: "assistant", content: initialMessage, id: 0 }] : []
   );
@@ -41,7 +42,8 @@ export function useSession(sessionId, initialMessage) {
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || isLoading) return;
-    addMessage("user", text);
+    const conf = scoreConfidence(text);
+    setMessages((prev) => [...prev, { role: "user", content: text, id: Date.now() + Math.random(), confidence: conf }]);
     setIsLoading(true);
     setError("");
 
@@ -74,14 +76,14 @@ export function useSession(sessionId, initialMessage) {
   const finish = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await endSession(sessionId);
+      const result = await finishFn(sessionId);
       setReport(result.report);
     } catch {
       setError("Failed to generate report.");
     } finally {
       setIsLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, finishFn]);
 
   return { messages, turnCount, isLoading, isFinal, report, error, sendMessage, finish, addMessage };
 }

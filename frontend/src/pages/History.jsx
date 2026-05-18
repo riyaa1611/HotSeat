@@ -6,6 +6,7 @@ import { Grain, Logo, LogoutButton, ThemeToggle } from "../components/shared";
 const PERSONA_LABEL = {
   investor: "Investor", tech_lead: "Tech Lead",
   hr_manager: "HR Manager", product_manager: "Product Manager",
+  behavioral: "Behavioral", resume_deepdive: "Resume Deep-Dive",
 };
 
 const DIMS = [
@@ -164,10 +165,69 @@ function RepoGroup({ repoUrl, sessions, navigate }) {
   );
 }
 
+function RoleGroup({ persona, sessions, navigate }) {
+  const completed = sessions.filter((s) => s.report?.overall != null);
+  const overallScores = completed.map((s) => s.report.overall).reverse();
+  const label = PERSONA_LABEL[persona] || persona;
+
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <div style={{
+        background: "var(--bg-card-2)", border: "1px solid var(--border-default)",
+        padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center",
+      }}>
+        <span style={{ fontWeight: 700, fontSize: 14 }}>{label}</span>
+        <span className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.12em" }}>
+          {completed.length} completed
+        </span>
+      </div>
+      <div style={{ border: "1px solid var(--border-default)", borderTop: "none", padding: "20px 24px" }}>
+        {completed.length >= 2 ? (
+          <>
+            <div className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>Score Trend</div>
+            <ScoreLine scores={overallScores} />
+          </>
+        ) : (
+          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Need 2+ sessions with this persona to show a trend.</div>
+        )}
+        <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 1, background: "var(--border-default)" }}>
+          {sessions.slice(0, 5).map((s) => {
+            const date = new Date(s.started_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const score = s.report?.overall;
+            const scoreColor = score >= 7 ? "var(--accent-green)" : score < 5 ? "var(--accent-red)" : "var(--accent-amber)";
+            return (
+              <div
+                key={s.session_id}
+                onClick={() => s.report && navigate("/report", { state: { report: s.report, persona: s.persona, repoUrl: s.repo_url } })}
+                style={{
+                  background: "var(--bg-card)", padding: "12px 16px",
+                  display: "flex", alignItems: "center", gap: 12,
+                  cursor: s.report ? "pointer" : "default", opacity: s.report ? 1 : 0.5,
+                }}
+              >
+                <div className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.1em" }}>{date}</div>
+                <div style={{ flex: 1, fontSize: 12, color: "var(--text-secondary)" }}>
+                  {(s.repo_url || "").split("/").slice(-1)[0] || "session"}
+                </div>
+                {score != null && (
+                  <div style={{ fontWeight: 800, fontSize: 16, color: scoreColor }}>
+                    {score}<span style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 400 }}>/10</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function History() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState("repo");
 
   useEffect(() => {
     getHistory().then((data) => { setSessions(data); setLoading(false); });
@@ -181,6 +241,14 @@ export default function History() {
   // Group by repo
   const byRepo = sessions.reduce((acc, s) => {
     const key = s.repo_url || "unknown";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(s);
+    return acc;
+  }, {});
+
+  // Group by persona/role
+  const byRole = sessions.reduce((acc, s) => {
+    const key = s.persona || "unknown";
     if (!acc[key]) acc[key] = [];
     acc[key].push(s);
     return acc;
@@ -204,10 +272,23 @@ export default function History() {
         <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--accent-red)", textTransform: "uppercase", marginBottom: 12 }}>
           Session History
         </div>
-        <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 32px" }}>
+        <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 20px" }}>
           {sessions.length} session{sessions.length !== 1 ? "s" : ""}
           {avg !== null && <span style={{ color: "var(--text-muted)", fontSize: 20 }}> · avg {avg}/10</span>}
         </h1>
+
+        <div style={{ display: "flex", gap: 0, marginBottom: 28, border: "1px solid var(--border-default)", width: "fit-content" }}>
+          {[["repo", "By Repo"], ["role", "By Role"]].map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={view === v ? "btn btn-primary" : "btn btn-ghost"}
+              style={{ padding: "6px 18px", fontSize: 12, letterSpacing: "0.08em", borderRadius: 0, border: "none" }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
         {loading && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -222,8 +303,12 @@ export default function History() {
           </div>
         )}
 
-        {!loading && sessions.length > 0 && Object.entries(byRepo).map(([repoUrl, repoSessions]) => (
+        {!loading && sessions.length > 0 && view === "repo" && Object.entries(byRepo).map(([repoUrl, repoSessions]) => (
           <RepoGroup key={repoUrl} repoUrl={repoUrl} sessions={repoSessions} navigate={navigate} />
+        ))}
+
+        {!loading && sessions.length > 0 && view === "role" && Object.entries(byRole).map(([persona, roleSessions]) => (
+          <RoleGroup key={persona} persona={persona} sessions={roleSessions} navigate={navigate} />
         ))}
       </main>
     </div>

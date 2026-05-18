@@ -1,5 +1,6 @@
 import json
 import logging
+import uuid
 from datetime import datetime
 from psycopg_pool import AsyncConnectionPool
 from app.config import get_settings
@@ -61,12 +62,34 @@ async def init_db():
         await conn.execute("ALTER TABLE public.sessions ADD COLUMN IF NOT EXISTS feedback TEXT")
         await conn.execute("ALTER TABLE public.sessions ADD COLUMN IF NOT EXISTS display_name TEXT")
         await conn.execute("ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY")
-        # Idempotent policy: authenticated users see only their own rows
+        # Authenticated users see only their own rows
         await conn.execute("""
             DO $$ BEGIN
               CREATE POLICY sessions_user_select ON public.sessions
                 FOR SELECT TO authenticated
                 USING (auth.uid()::text = user_id);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        # Block all writes from Supabase client — only backend (direct conn) may write
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY sessions_no_insert ON public.sessions
+                FOR INSERT WITH CHECK (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY sessions_no_update ON public.sessions
+                FOR UPDATE USING (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY sessions_no_delete ON public.sessions
+                FOR DELETE USING (false);
             EXCEPTION WHEN duplicate_object THEN NULL;
             END $$
         """)
@@ -88,6 +111,46 @@ async def init_db():
             """
         )
 
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS public.shared_reports (
+                token TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        await conn.execute("ALTER TABLE public.shared_reports ENABLE ROW LEVEL SECURITY")
+        # Anyone with a valid token can read that one row (share links are intentionally public)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY shared_reports_public_read ON public.shared_reports
+                FOR SELECT USING (true);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        # Block all writes from the anon/authenticated Supabase client — only backend writes
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY shared_reports_no_insert ON public.shared_reports
+                FOR INSERT WITH CHECK (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY shared_reports_no_update ON public.shared_reports
+                FOR UPDATE USING (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY shared_reports_no_delete ON public.shared_reports
+                FOR DELETE USING (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+
         cols = await _get_sessions_columns(conn)
         required = {"session_id", "persona", "repo_url", "messages", "started_at"}
         optional = {"display_name", "feedback", "report", "ended_at", "turn_count", "user_id"}
@@ -100,6 +163,43 @@ async def init_db():
                 "public.sessions missing optional columns; compatibility mode active: %s",
                 ", ".join(missing_optional),
             )
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS public.user_profiles (
+                user_id TEXT PRIMARY KEY,
+                display_name TEXT DEFAULT '',
+                bio TEXT DEFAULT '',
+                job_title TEXT DEFAULT '',
+                company TEXT DEFAULT '',
+                location TEXT DEFAULT '',
+                linkedin_url TEXT DEFAULT '',
+                github_url TEXT DEFAULT '',
+                updated_at TEXT
+            )
+        """)
+        await conn.execute("ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY")
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY user_profiles_self_select ON public.user_profiles
+                FOR SELECT TO authenticated
+                USING (auth.uid()::text = user_id);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY user_profiles_no_insert ON public.user_profiles
+                FOR INSERT WITH CHECK (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
+        await conn.execute("""
+            DO $$ BEGIN
+              CREATE POLICY user_profiles_no_update ON public.user_profiles
+                FOR UPDATE USING (false);
+            EXCEPTION WHEN duplicate_object THEN NULL;
+            END $$
+        """)
 
 
 async def save_session(session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = "", display_name: str = ""):
@@ -232,6 +332,29 @@ async def get_report(session_id: str) -> dict | None:
         ) as cur:
             row = await cur.fetchone()
             if row and row[0]:
+                return json.loads(row[0])
+            return None
+
+
+async def create_shared_report(session_id: str, payload: dict) -> str:
+    token = str(uuid.uuid4())
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        await conn.execute(
+            "INSERT INTO public.shared_reports (token, session_id, payload, created_at) VALUES (%s, %s, %s, %s)",
+            (token, session_id, json.dumps(payload), datetime.now().isoformat()),
+        )
+    return token
+
+
+async def get_shared_report(token: str) -> dict | None:
+    pool = await get_pool()
+    async with pool.connection() as conn:
+        async with await conn.execute(
+            "SELECT payload FROM public.shared_reports WHERE token = %s", (token,)
+        ) as cur:
+            row = await cur.fetchone()
+            if row:
                 return json.loads(row[0])
             return None
 

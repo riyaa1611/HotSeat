@@ -11,7 +11,7 @@ async function syncBackendCookie(accessToken) {
   try {
     await fetch(`${API_BASE}/auth/session`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
       credentials: "include",
       body: JSON.stringify({ access_token: accessToken }),
     });

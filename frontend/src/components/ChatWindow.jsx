@@ -5,6 +5,8 @@ const PERSONA_TITLES = {
   tech_lead: "TECH LEAD",
   hr_manager: "HR MANAGER",
   product_manager: "PRODUCT MANAGER",
+  behavioral: "BEHAVIORAL",
+  resume_deepdive: "RESUME DEEP-DIVE",
 };
 
 export default function ChatWindow({ messages, persona, isLoading }) {
@@ -45,6 +47,16 @@ export default function ChatWindow({ messages, persona, isLoading }) {
                 }} />
               )}
             </div>
+            {msg.role === "user" && msg.confidence && (
+              <div style={{ marginTop: 4, display: "flex", justifyContent: "flex-end" }}>
+                <span className="mono" style={{
+                  fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase",
+                  color: msg.confidence.color, opacity: 0.75,
+                }}>
+                  {msg.confidence.label} · {msg.confidence.score}
+                </span>
+              </div>
+            )}
           </div>
         ))}
         {isLoading && !messages.some((m) => m.streaming) && (

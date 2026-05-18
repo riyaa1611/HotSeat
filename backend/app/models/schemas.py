@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 
 _Url = Annotated[str, Field(max_length=500)]
 _ShortText = Annotated[str, Field(max_length=1000)]
@@ -52,6 +52,12 @@ class EndSessionRequest(BaseModel):
     session_id: str
 
 
+class AnswerBreakdownItem(BaseModel):
+    turn: int
+    score: int
+    note: str
+
+
 class EvaluationReport(BaseModel):
     clarity: int
     technical_depth: int
@@ -62,7 +68,25 @@ class EvaluationReport(BaseModel):
     strengths: list[str]
     weaknesses: list[str]
     action_item: str
+    answer_breakdown: Optional[list[AnswerBreakdownItem]] = None
 
 
 class EndSessionResponse(BaseModel):
     report: EvaluationReport
+
+
+class InterviewReport(BaseModel):
+    communication: int
+    confidence: int
+    problem_solving: int
+    culture_fit: int
+    honesty: int
+    overall: int
+    strengths: list[str]
+    weaknesses: list[str]
+    action_item: str
+    answer_breakdown: Optional[list[AnswerBreakdownItem]] = None
+
+
+class EndInterviewResponse(BaseModel):
+    report: InterviewReport

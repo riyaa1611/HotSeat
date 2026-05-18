@@ -15,8 +15,9 @@ class SessionManager:
     def __init__(self):
         self.sessions: dict = {}
 
-    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None, user_id: str = ""):
-        system_prompt = get_persona_prompt(persona, repo_context)
+    def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None, user_id: str = "", system_prompt: str = None):
+        if system_prompt is None:
+            system_prompt = get_persona_prompt(persona, repo_context)
         if focus_areas:
             system_prompt += f"\n\nUSER-SPECIFIED FOCUS AREAS — prioritize questions on these topics: {', '.join(focus_areas)}."
         self.sessions[session_id] = {
@@ -96,3 +97,6 @@ class SessionManager:
 
     def get_messages(self, session_id: str) -> list:
         return self.sessions[session_id]["messages"]
+
+
+session_manager = SessionManager()

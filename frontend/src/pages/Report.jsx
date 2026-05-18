@@ -2,13 +2,21 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ScoreCard from "../components/ScoreCard";
 import { Grain, Logo, RadarChartSVG, FlameIcon, useToast, ToastContainer } from "../components/shared";
-import { submitFeedback, getHistory } from "../services/api";
+import { submitFeedback, getHistory, createShareReport } from "../services/api";
 
-const SCORE_KEYS = [
+const PITCH_SCORE_KEYS = [
   { key: "clarity", label: "Clarity" },
   { key: "technical_depth", label: "Technical" },
   { key: "business_sense", label: "Business" },
   { key: "pressure_handling", label: "Pressure" },
+  { key: "honesty", label: "Honesty" },
+];
+
+const INTERVIEW_SCORE_KEYS = [
+  { key: "communication", label: "Communication" },
+  { key: "confidence", label: "Confidence" },
+  { key: "problem_solving", label: "Problem Solving" },
+  { key: "culture_fit", label: "Culture Fit" },
   { key: "honesty", label: "Honesty" },
 ];
 
@@ -72,10 +80,35 @@ function FeedbackCard({ title, tone, icon: IconC, items }) {
   );
 }
 
+function AnswerBreakdown({ breakdown }) {
+  if (!breakdown || breakdown.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 1, background: "var(--border-default)" }}>
+      {breakdown.map((item) => {
+        const color = item.score >= 7 ? "var(--accent-green)" : item.score < 5 ? "var(--accent-red)" : "var(--accent-amber)";
+        return (
+          <div key={item.turn} style={{ background: "var(--bg-card)", padding: "16px 20px", display: "flex", gap: 16, alignItems: "flex-start" }}>
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, minWidth: 36 }}>
+              <span className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.14em" }}>Q{item.turn}</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{item.score}</span>
+              <span className="mono" style={{ fontSize: 8, color: "var(--text-muted)" }}>/10</span>
+            </div>
+            <div style={{ width: 2, background: color, alignSelf: "stretch", flexShrink: 0 }} />
+            <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.55, paddingTop: 2 }}>
+              {item.note}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Report() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { report, persona, repoUrl, violations = [], transcript = [], session_id } = location.state || {};
+  const { report, persona, repoUrl, violations = [], transcript = [], session_id, mode } = location.state || {};
+  const SCORE_KEYS = mode === "interview" ? INTERVIEW_SCORE_KEYS : PITCH_SCORE_KEYS;
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackComment, setFeedbackComment] = useState("");
@@ -214,6 +247,14 @@ export default function Report() {
             <ScoreCard key={key} label={label} score={report[key]} />
           ))}
         </div>
+
+        {/* Per-answer breakdown */}
+        {report.answer_breakdown && report.answer_breakdown.length > 0 && (
+          <>
+            <div className="section-divider"><span>Answer-by-Answer Breakdown</span></div>
+            <AnswerBreakdown breakdown={report.answer_breakdown} />
+          </>
+        )}
 
         {/* Strengths + Weaknesses */}
         <div className="report-feedback-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -376,14 +417,21 @@ export default function Report() {
           <button className="btn btn-large" onClick={() => navigate("/")}>
             <RefreshIcon /> Switch Persona
           </button>
-          <button className="btn btn-large" onClick={() => {
-            const encoded = btoa(JSON.stringify({ report, persona, repoUrl }));
-            const url = `${window.location.origin}/report/shared#${encoded}`;
-            navigator.clipboard.writeText(url).then(() => toast("Share link copied to clipboard!"));
+          <button className="btn btn-large" onClick={async () => {
+            try {
+              const { token } = await createShareReport(session_id, report, persona, repoUrl);
+              const url = `${window.location.origin}/report/shared/${token}`;
+              navigator.clipboard.writeText(url).then(() => toast("Share link copied to clipboard!"));
+            } catch {
+              toast("Failed to create share link.", "error");
+            }
           }}>
             Share Report
           </button>
-          <button className="btn btn-ghost" onClick={() => navigate("/history")} style={{ fontSize: 13 }}>
+          <button className="btn btn-large no-print" onClick={() => window.print()}>
+            Download PDF
+          </button>
+          <button className="btn btn-ghost no-print" onClick={() => navigate("/history")} style={{ fontSize: 13 }}>
             History
           </button>
         </div>

@@ -18,6 +18,7 @@ Then give:
 - Top 2 strengths (one sentence each, specific to what they said)
 - Top 3 weaknesses (one sentence each — be specific)
 - One concrete action item for their next practice session
+- Per-answer breakdown: for each user answer (in order), assign a score 1-10 and a one-sentence note on what was strong or weak. Count only actual user answers, not system messages.
 
 Respond ONLY in this exact JSON format, no other text:
 {
@@ -29,17 +30,17 @@ Respond ONLY in this exact JSON format, no other text:
   "overall": <int 1-10>,
   "strengths": ["...", "..."],
   "weaknesses": ["...", "...", "..."],
-  "action_item": "..."
+  "action_item": "...",
+  "answer_breakdown": [
+    {"turn": 1, "score": <int 1-10>, "note": "..."},
+    {"turn": 2, "score": <int 1-10>, "note": "..."}
+  ]
 }
 """
 
 FALLBACK_REPORT = {
-    "clarity": 5,
-    "technical_depth": 5,
-    "business_sense": 5,
-    "pressure_handling": 5,
-    "honesty": 5,
-    "overall": 5,
+    "clarity": 5, "technical_depth": 5, "business_sense": 5,
+    "pressure_handling": 5, "honesty": 5, "overall": 5,
     "strengths": ["Session completed", "Engaged with the evaluator"],
     "weaknesses": [
         "Report generation failed — review the conversation manually",
@@ -47,6 +48,7 @@ FALLBACK_REPORT = {
         "Practice articulating your project more clearly",
     ],
     "action_item": "Re-run the session and try to give more specific, concrete answers.",
+    "answer_breakdown": [],
 }
 
 

@@ -33,8 +33,8 @@ def detect_tech_stack(parsed: dict) -> list[str]:
 async def parse_url_endpoint(request: Request, body: ParseUrlRequest, _: str = Depends(get_current_user)):
     try:
         scraped = await scrape_url(body.project_url)
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch URL: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=502, detail="Failed to fetch URL. Ensure it is publicly accessible.")
 
     github_url = scraped.get("github_url")
     if github_url:
@@ -79,10 +79,10 @@ def _detect_tech_from_html(text: str) -> list[str]:
 async def parse_repo_endpoint(request: Request, body: ParseRepoRequest, _: str = Depends(get_current_user)):
     try:
         parsed = await parse_repo(body.repo_url)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch repo: {str(e)}")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid repo URL. Ensure it points to a public GitHub repository.")
+    except Exception:
+        raise HTTPException(status_code=502, detail="Failed to fetch repo. Ensure it is public and the URL is correct.")
 
     context = build_context(parsed)
     tech_stack = detect_tech_stack(parsed)

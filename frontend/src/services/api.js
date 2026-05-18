@@ -5,7 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const api = axios.create({
   baseURL: BASE_URL,
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
   timeout: 30000,
   withCredentials: true,
 });
@@ -53,7 +53,7 @@ export async function respondStream(sessionId, message, { onChunk, onDone, onErr
   try {
     res = await fetch(`${BASE_URL}/respond-stream`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
       credentials: "include",
       body: JSON.stringify({ session_id: sessionId, message }),
     });
@@ -120,6 +120,45 @@ export async function getHistory() {
     ...s,
     report: s.report ? (typeof s.report === "string" ? JSON.parse(s.report) : s.report) : null,
   }));
+}
+
+export async function startInterview(resumeFile, githubUrl, role, persona, displayName = "") {
+  const form = new FormData();
+  form.append("resume", resumeFile);
+  form.append("github_url", githubUrl);
+  form.append("role", role);
+  form.append("persona", persona);
+  form.append("display_name", displayName);
+  const { data } = await api.post("/start-interview", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 60000,
+  });
+  return data;
+}
+
+export async function endInterview(sessionId) {
+  const { data } = await api.post("/end-interview", { session_id: sessionId });
+  return data;
+}
+
+export async function createShareReport(sessionId, report, persona, repoUrl) {
+  const { data } = await api.post("/share-report", {
+    session_id: sessionId,
+    report,
+    persona,
+    repo_url: repoUrl || "",
+  });
+  return data;
+}
+
+export async function getProfile() {
+  const { data } = await api.get("/user/profile");
+  return data;
+}
+
+export async function updateProfile(fields) {
+  const { data } = await api.patch("/user/profile", fields);
+  return data;
 }
 
 export default api;

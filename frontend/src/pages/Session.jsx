@@ -12,6 +12,7 @@ import { useTTS } from "../hooks/useTTS";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { scoreConfidence } from "../hooks/useConfidence";
 import { Grain, Logo, ThemeToggle } from "../components/shared";
+import { endInterview } from "../services/api";
 
 const MAX_TURNS = 12;
 
@@ -37,6 +38,8 @@ const PERSONA_TITLES = {
   tech_lead: "TECH LEAD",
   hr_manager: "HR MANAGER",
   product_manager: "PRODUCT MANAGER",
+  behavioral: "BEHAVIORAL",
+  resume_deepdive: "RESUME DEEP-DIVE",
 };
 
 function SendIcon() {
@@ -77,7 +80,7 @@ function VolumeMuteIcon() {
 export default function Session() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session_id, first_message, persona, repoUrl } = location.state || {};
+  const { session_id, first_message, persona, repoUrl, mode } = location.state || {};
   const [input, setInput] = useState("");
   const [isPaused, setIsPaused] = useState(false);
   const [micOffToast, setMicOffToast] = useState(false);
@@ -87,8 +90,10 @@ export default function Session() {
   inputValueRef.current = input;
   const violationsRef = useRef([]);
 
+  const finishFn = mode === "interview" ? endInterview : undefined;
+
   const { messages, turnCount, isLoading, isFinal, report, error, sendMessage, finish } =
-    useSession(session_id, first_message);
+    useSession(session_id, first_message, finishFn);
 
   const { isListening, isSupported, toggleListening } = useSpeechRecognition({
     onTranscript: (text) => setInput(text),
@@ -139,7 +144,7 @@ export default function Session() {
     if (report) {
       if (document.fullscreenElement) document.exitFullscreen?.();
       const transcript = messages.filter((m) => m.role !== "system" && !m.streaming);
-      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript, session_id } });
+      navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript, session_id, mode } });
     }
   }, [report, navigate, persona, repoUrl]);
 

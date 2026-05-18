@@ -84,7 +84,7 @@ export function LogoutButton() {
   const navigate = useNavigate();
   async function handleLogout() {
     try {
-      await fetch(`${_API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+      await fetch(`${_API_BASE}/auth/logout`, { method: "POST", credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } });
     } catch { /* non-fatal */ }
     await supabase.auth.signOut();
     navigate("/");

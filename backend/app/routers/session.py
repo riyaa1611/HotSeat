@@ -13,12 +13,11 @@ from app.models.database import save_session, update_session, save_report, get_s
 from app.services.repo_parser import parse_repo
 from app.services.url_scraper import scrape_url
 from app.services.context_builder import build_context
-from app.services.conversation import SessionManager
+from app.services.conversation import session_manager as _manager
 from app.services.evaluator import evaluate_session
 from app.auth import get_current_user
 
 router = APIRouter()
-_manager = SessionManager()
 logger = logging.getLogger(__name__)
 
 
@@ -39,8 +38,8 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
                     parsed = scraped
             else:
                 parsed = scraped
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid repo or project URL.")
     except Exception:
         logger.exception("start_session failed during project parsing")
         raise HTTPException(
@@ -67,7 +66,7 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
         logger.exception("start_session failed while generating first AI question")
         raise HTTPException(
             status_code=502,
-            detail="Failed to generate the first question. Check GROQ API key/model configuration.",
+            detail="Failed to generate the first question. Please try again.",
         )
 
     try:
@@ -79,7 +78,7 @@ async def start_session(request: Request, body: StartSessionRequest, user_id: st
         logger.exception("start_session failed while saving session to database")
         raise HTTPException(
             status_code=500,
-            detail="Session was created but could not be saved. Check database connectivity and schema.",
+            detail="Session was created but could not be saved. Please try again.",
         )
 
     return StartSessionResponse(session_id=session_id, first_message=first_message)
@@ -129,7 +128,8 @@ async def respond_stream(request: Request, body: RespondRequest, user_id: str = 
             )
             yield f"data: {json.dumps({'done': True, **meta})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            logger.exception("respond_stream error for session %s", body.session_id)
+            yield f"data: {json.dumps({'error': 'Stream error. Please try again.'})}\n\n"
 
     return StreamingResponse(
         generate(),
