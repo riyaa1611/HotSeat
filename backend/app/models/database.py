@@ -304,8 +304,14 @@ async def get_leaderboard(limit: int = 20) -> list:
                 report = json.loads(row[3])
                 uid = row[0] or ""
                 name = (row[5] or "").strip()
+                # Show first name + initial only to avoid exposing full names publicly
+                if name:
+                    parts = name.split()
+                    display = parts[0] + (" " + parts[1][0] + "." if len(parts) > 1 else "")
+                else:
+                    display = uid[:6] + "***" if uid else "anon"
                 result.append({
-                    "user": name if name else (uid[:6] + "***" if uid else "anon"),
+                    "user": display,
                     "persona": row[1],
                     "repo": (row[2] or "").rstrip("/").split("/")[-1] or "project",
                     "overall": report.get("overall"),
