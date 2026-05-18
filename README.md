@@ -51,6 +51,8 @@ Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 qu
 - httpOnly cookie auth · SSRF-guarded URL scraping · Per-user rate limiting
 - PDF resume parsing · GitHub profile fetching with retry + backoff
 - `user_profiles` table for persistent profile data
+- LLM error handling — retries on transient Groq errors, session state rollback on failure, fallback evaluation reports on bad JSON
+- Anti-hallucination guardrails — temperature tuning per call type, strict "only use provided context" prompt rules, score range validation (1–10 clamp)
 
 **Frontend**
 - React · Vite · React Router
@@ -159,4 +161,6 @@ hotseat/
 - Input length caps on all user-supplied fields
 - CORS locked to explicit frontend origin
 - Row Level Security enabled on all tables (sessions, shared_reports, user_profiles)
+- Content-Security-Policy header on all API responses
+- Leaderboard names masked to "First L." format — full names never exposed publicly
 - `/docs` disabled in production
