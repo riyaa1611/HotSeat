@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { respondStream, endSession } from "../services/api";
 import { supabase } from "../lib/supabase";
 import { scoreConfidence } from "./useConfidence";
@@ -12,6 +12,7 @@ export function useSession(sessionId, initialMessage, finishFn = endSession) {
   const [isFinal, setIsFinal] = useState(false);
   const [report, setReport] = useState(null);
   const [error, setError] = useState("");
+  const lastMessageRef = useRef("");
 
   function addMessage(role, content) {
     setMessages((prev) => [...prev, { role, content, id: Date.now() + Math.random() }]);
@@ -42,12 +43,12 @@ export function useSession(sessionId, initialMessage, finishFn = endSession) {
 
   const sendMessage = useCallback(async (text) => {
     if (!text.trim() || isLoading) return;
+    lastMessageRef.current = text;
     const conf = scoreConfidence(text);
     setMessages((prev) => [...prev, { role: "user", content: text, id: Date.now() + Math.random(), confidence: conf }]);
     setIsLoading(true);
     setError("");
 
-    // Add streaming placeholder
     const streamId = Date.now() + Math.random();
     setMessages((prev) => [...prev, { role: "assistant", content: "", id: streamId, streaming: true }]);
 
@@ -64,6 +65,7 @@ export function useSession(sessionId, initialMessage, finishFn = endSession) {
         setTurnCount(data.turn_count);
         setIsFinal(data.is_final);
         setIsLoading(false);
+        lastMessageRef.current = "";
       },
       onError: (err) => {
         setMessages((prev) => prev.filter((m) => m.id !== streamId));
@@ -72,6 +74,20 @@ export function useSession(sessionId, initialMessage, finishFn = endSession) {
       },
     });
   }, [sessionId, isLoading]);
+
+  const retryLastMessage = useCallback(() => {
+    const last = lastMessageRef.current;
+    if (!last) return;
+    // Remove the failed user message from the display before resending
+    setMessages((prev) => {
+      const idx = [...prev].reverse().findIndex((m) => m.role === "user" && m.content === last);
+      if (idx === -1) return prev;
+      const realIdx = prev.length - 1 - idx;
+      return prev.filter((_, i) => i !== realIdx);
+    });
+    setError("");
+    sendMessage(last);
+  }, [sendMessage]);
 
   const finish = useCallback(async () => {
     setIsLoading(true);
@@ -85,5 +101,5 @@ export function useSession(sessionId, initialMessage, finishFn = endSession) {
     }
   }, [sessionId, finishFn]);
 
-  return { messages, turnCount, isLoading, isFinal, report, error, sendMessage, finish, addMessage };
+  return { messages, turnCount, isLoading, isFinal, report, error, sendMessage, retryLastMessage, finish, addMessage };
 }

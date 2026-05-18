@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     groq_model: str = "llama-3.3-70b-versatile"
+    groq_model_fallback: str = "llama-3.1-8b-instant"
     max_turns: int = 12
     wrap_up_turn: int = 10
     frontend_url: str = "http://localhost:5173"

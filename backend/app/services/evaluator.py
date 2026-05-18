@@ -87,22 +87,44 @@ def _validate_and_clamp(data: dict) -> dict:
     return data
 
 
+_EVAL_SYSTEM = "You are an objective evaluator. Return only valid JSON. Do not invent information not present in the conversation."
+_EVAL_SYSTEM_STRICT = "Return ONLY a valid JSON object. No markdown, no explanation, no extra text. Start your response with { and end with }."
+_JSON_FORMAT = {"type": "json_object"}
+
+
 async def evaluate_session(messages: list[dict]) -> dict:
     eval_messages = [
-        {"role": "system", "content": "You are an objective evaluator. Return only valid JSON. Do not invent information not present in the conversation."},
+        {"role": "system", "content": _EVAL_SYSTEM},
         *messages,
         {"role": "user", "content": EVAL_PROMPT},
     ]
 
-    try:
-        raw = await groq_chat(eval_messages, temperature=0.3, max_tokens=1024)
-    except Exception:
-        logger.exception("evaluate_session: groq_chat failed")
-        return FALLBACK_REPORT.copy()
+    for attempt, (system, use_json_mode) in enumerate([
+        (_EVAL_SYSTEM, True),
+        (_EVAL_SYSTEM_STRICT, True),
+    ]):
+        if attempt > 0:
+            eval_messages[0] = {"role": "system", "content": system}
+        try:
+            raw = await groq_chat(
+                eval_messages,
+                temperature=0.3,
+                max_tokens=1024,
+                response_format=_JSON_FORMAT if use_json_mode else None,
+            )
+        except Exception:
+            logger.exception("evaluate_session: groq_chat failed (attempt %d)", attempt + 1)
+            if attempt == 0:
+                continue
+            return FALLBACK_REPORT.copy()
 
-    try:
-        data = _parse_json_response(raw)
-        return _validate_and_clamp(data)
-    except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
-        logger.warning("evaluate_session: invalid LLM response (%s), returning fallback", e)
-        return FALLBACK_REPORT.copy()
+        try:
+            data = _parse_json_response(raw)
+            return _validate_and_clamp(data)
+        except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
+            logger.warning("evaluate_session: invalid response attempt %d (%s)", attempt + 1, e)
+            if attempt == 0:
+                continue
+            return FALLBACK_REPORT.copy()
+
+    return FALLBACK_REPORT.copy()

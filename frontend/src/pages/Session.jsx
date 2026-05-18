@@ -12,7 +12,9 @@ import { useTTS } from "../hooks/useTTS";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { scoreConfidence } from "../hooks/useConfidence";
 import { Grain, Logo, ThemeToggle } from "../components/shared";
-import { endInterview } from "../services/api";
+import { endInterview, getHistory } from "../services/api";
+
+const SESSION_KEY = "hotseat_session";
 
 const MAX_TURNS = 12;
 
@@ -80,7 +82,28 @@ function VolumeMuteIcon() {
 export default function Session() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { session_id, first_message, persona, repoUrl, mode } = location.state || {};
+
+  // Recover state from sessionStorage on hard refresh
+  const stateFromNav = location.state || {};
+  const stateFromStorage = (() => {
+    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || "{}"); } catch { return {}; }
+  })();
+  const { session_id, first_message, persona, repoUrl, mode } = Object.keys(stateFromNav).length
+    ? stateFromNav
+    : stateFromStorage;
+
+  // Persist session state so a refresh can recover it
+  useEffect(() => {
+    if (session_id) {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ session_id, first_message, persona, repoUrl, mode }));
+    }
+  }, [session_id]);
+
+  // Clear stored session once we navigate away
+  useEffect(() => {
+    return () => { if (!session_id) sessionStorage.removeItem(SESSION_KEY); };
+  }, []);
+
   const [input, setInput] = useState("");
   const [isPaused, setIsPaused] = useState(false);
   const [micOffToast, setMicOffToast] = useState(false);
@@ -92,7 +115,7 @@ export default function Session() {
 
   const finishFn = mode === "interview" ? endInterview : undefined;
 
-  const { messages, turnCount, isLoading, isFinal, report, error, sendMessage, finish } =
+  const { messages, turnCount, isLoading, isFinal, report, error, sendMessage, retryLastMessage, finish } =
     useSession(session_id, first_message, finishFn);
 
   const { isListening, isSupported, toggleListening } = useSpeechRecognition({
@@ -143,6 +166,7 @@ export default function Session() {
   useEffect(() => {
     if (report) {
       if (document.fullscreenElement) document.exitFullscreen?.();
+      sessionStorage.removeItem(SESSION_KEY);
       const transcript = messages.filter((m) => m.role !== "system" && !m.streaming);
       navigate("/report", { state: { report, persona, repoUrl, violations: violationsRef.current, transcript, session_id, mode } });
     }
@@ -343,8 +367,16 @@ export default function Session() {
           margin: "0 24px 8px", padding: "12px 16px",
           background: "var(--accent-red-soft)", borderLeft: "2px solid var(--accent-red)",
           color: "var(--accent-red)", fontSize: 13,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
         }}>
-          {error}
+          <span>{error}</span>
+          <button
+            className="btn btn-ghost"
+            onClick={retryLastMessage}
+            style={{ fontSize: 11, padding: "4px 12px", flexShrink: 0, borderColor: "var(--accent-red)", color: "var(--accent-red)" }}
+          >
+            Retry
+          </button>
         </div>
       )}
 

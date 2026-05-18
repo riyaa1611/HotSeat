@@ -1,11 +1,12 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.services.prompt_engine import get_persona_prompt
 from app.services.groq_client import chat as groq_chat, stream_chat as groq_stream_chat
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
+SESSION_TTL = timedelta(hours=2)
 WRAP_UP_INJECTION = {
     "role": "system",
     "content": "This is the last question. Wrap up with a blunt 2-3 sentence verdict on how they performed overall. Be honest and direct.",
@@ -14,12 +15,45 @@ WRAP_UP_INJECTION = {
 EMPTY_ANSWER_RESPONSE = "Did you just waste my time? Answer the question."
 LLM_ERROR_RESPONSE = "Technical issue on my end. Try again."
 
+_REPEAT_WINDOW = 4
+_REPEAT_THRESHOLD = 0.55
+
+
+def _jaccard(a: str, b: str) -> float:
+    wa = set(a.lower().split())
+    wb = set(b.lower().split())
+    if not wa or not wb:
+        return 0.0
+    return len(wa & wb) / len(wa | wb)
+
+
+def _is_repeat(response: str, recent_assistant_msgs: list[str]) -> bool:
+    for prev in recent_assistant_msgs:
+        if _jaccard(response, prev) >= _REPEAT_THRESHOLD:
+            return True
+    return False
+
 
 class SessionManager:
     def __init__(self):
         self.sessions: dict = {}
 
+    def _evict_expired(self):
+        now = datetime.now()
+        expired = [sid for sid, s in self.sessions.items() if now - s["started_at"] > SESSION_TTL]
+        for sid in expired:
+            logger.info("Evicting expired session %s", sid)
+            del self.sessions[sid]
+
+    def _check_ttl(self, session_id: str):
+        session = self.sessions.get(session_id)
+        if session and datetime.now() - session["started_at"] > SESSION_TTL:
+            logger.info("Session %s expired on access, evicting", session_id)
+            del self.sessions[session_id]
+            raise KeyError(session_id)
+
     def start_session(self, session_id: str, persona: str, repo_context: str, repo_url: str, focus_areas: list[str] = None, user_id: str = "", system_prompt: str = None):
+        self._evict_expired()
         if system_prompt is None:
             system_prompt = get_persona_prompt(persona, repo_context)
         if focus_areas:
@@ -34,6 +68,7 @@ class SessionManager:
         }
 
     async def respond(self, session_id: str, user_message: str) -> dict:
+        self._check_ttl(session_id)
         session = self.sessions[session_id]
         settings = get_settings()
 
@@ -67,6 +102,16 @@ class SessionManager:
                 "is_final": False,
             }
 
+        # Repetition detection — retry once with explicit instruction
+        recent = [m["content"] for m in session["messages"] if m["role"] == "assistant"][-_REPEAT_WINDOW - 1:-1]
+        if _is_repeat(response, recent):
+            logger.warning("Repetition detected in session %s, retrying with anti-repeat injection", session_id)
+            anti_repeat = {"role": "system", "content": "IMPORTANT: Do NOT repeat or rephrase a question you have already asked. Ask a completely new question on a different aspect."}
+            try:
+                response = await groq_chat([*session["messages"], anti_repeat])
+            except Exception:
+                logger.warning("Anti-repeat retry failed for session %s, using original response", session_id)
+
         session["messages"].append({"role": "assistant", "content": response})
 
         return {
@@ -76,6 +121,7 @@ class SessionManager:
         }
 
     async def stream_respond(self, session_id: str, user_message: str):
+        self._check_ttl(session_id)
         session = self.sessions[session_id]
         settings = get_settings()
 
@@ -106,6 +152,7 @@ class SessionManager:
             session["messages"].append({"role": "assistant", "content": full_response})
 
     def get_session_meta(self, session_id: str) -> dict:
+        self._check_ttl(session_id)
         session = self.sessions[session_id]
         settings = get_settings()
         return {
@@ -114,6 +161,7 @@ class SessionManager:
         }
 
     def restore_session(self, session_id: str, persona: str, repo_url: str, messages: list, turn_count: int, user_id: str = ""):
+        self._evict_expired()
         self.sessions[session_id] = {
             "messages": messages,
             "persona": persona,
@@ -124,6 +172,7 @@ class SessionManager:
         }
 
     def get_messages(self, session_id: str) -> list:
+        self._check_ttl(session_id)
         return self.sessions[session_id]["messages"]
 
 
