@@ -50,18 +50,31 @@ export function useSpeechRecognition({ onTranscript, onAutoSend, onSilenceTimeou
       onTranscriptRef.current?.(final || interim);
     };
 
+    const FATAL_ERRORS = new Set(["not-allowed", "service-not-allowed", "audio-capture"]);
+
     recognition.onerror = (e) => {
       if (e.error === "aborted") return;
-      // On no-speech or network errors, restart if user is still intending to listen
-      if (shouldListenRef.current) return;
-      setIsListening(false);
-      shouldListenRef.current = false;
+      if (FATAL_ERRORS.has(e.error)) {
+        // Permission denied or no mic — stop and don't retry
+        shouldListenRef.current = false;
+        clearTimeout(silenceTimer.current);
+        setIsListening(false);
+        return;
+      }
+      // Transient errors (no-speech, network) — onend will restart if still intending to listen
     };
 
     // Chrome fires onend after silence even with continuous=true — restart if user hasn't stopped
     recognition.onend = () => {
       if (shouldListenRef.current) {
-        try { recognition.start(); } catch {}
+        try {
+          recognition.start();
+        } catch {
+          // start() failed (e.g. permission revoked mid-session) — stop cleanly
+          shouldListenRef.current = false;
+          clearTimeout(silenceTimer.current);
+          setIsListening(false);
+        }
       } else {
         setIsListening(false);
       }
