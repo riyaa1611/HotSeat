@@ -81,11 +81,21 @@ export default function Auth() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [mode, setMode] = useState("login");
-  const [step, setStep] = useState("form"); // "form" | "otp"
+  const [step, setStep] = useState("form"); // "form" | "otp" | "forgot" | "reset_sent" | "reset"
 
   useEffect(() => {
-    if (user) navigate("/app", { replace: true });
-  }, [user]);
+    if (user && step !== "reset") navigate("/app", { replace: true });
+  }, [user, step]);
+
+  // Detect Supabase password-recovery redirect (URL hash contains type=recovery)
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      setStep("reset");
+      // Clean the hash so it doesn't persist on reload
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -173,6 +183,39 @@ export default function Auth() {
     setLoading(false);
   }, [email]);
 
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setStep("reset_sent");
+    }
+    setLoading(false);
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    setError("");
+    if (password !== confirm) { setError("Passwords do not match."); return; }
+    setLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) {
+      setError(error.message);
+    } else {
+      await supabase.auth.signOut();
+      setStep("form");
+      setPassword("");
+      setConfirm("");
+      setError("");
+    }
+    setLoading(false);
+  }
+
   async function handleResend() {
     if (resendCooldown > 0) return;
     setError("");
@@ -207,8 +250,110 @@ export default function Auth() {
       <main style={{ flex: 1, display: "grid", placeItems: "center", padding: "40px 24px" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
 
-          {/* ── OTP step ── */}
-          {step === "otp" ? (
+          {/* ── Reset password step ── */}
+          {step === "reset" ? (
+            <>
+              <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>
+                New Password
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 12px" }}>
+                Choose a new password.
+              </h1>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 28px" }}>
+                Pick something strong. You won't be able to reuse the old one.
+              </p>
+              <form onSubmit={handleResetPassword} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Field label="New Password">
+                  <div style={{ position: "relative" }}>
+                    <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="••••••••" minLength={6} style={{ ...inputStyle, paddingRight: 48 }} />
+                    <button type="button" onClick={() => setShowPassword(p => !p)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, padding: 0 }}>
+                      {showPassword ? "HIDE" : "SHOW"}
+                    </button>
+                  </div>
+                </Field>
+                <Field label="Confirm Password">
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showConfirm ? "text" : "password"}
+                      value={confirm}
+                      onChange={(e) => setConfirm(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      minLength={6}
+                      style={{
+                        ...inputStyle, paddingRight: 48,
+                        borderColor: confirm && confirm !== password ? "var(--accent-red)" : confirm && confirm === password ? "var(--accent-green)" : "var(--border-default)",
+                      }}
+                    />
+                    <button type="button" onClick={() => setShowConfirm(p => !p)} style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: 13, padding: 0 }}>
+                      {showConfirm ? "HIDE" : "SHOW"}
+                    </button>
+                  </div>
+                  {confirm && confirm !== password && (
+                    <div className="mono" style={{ fontSize: 10, color: "var(--accent-red)", marginTop: 4, letterSpacing: "0.1em" }}>Passwords do not match</div>
+                  )}
+                </Field>
+                {error && (
+                  <div style={{ padding: "12px 14px", background: "var(--accent-red-soft)", borderLeft: "2px solid var(--accent-red)", color: "var(--accent-red)", fontSize: 13 }}>
+                    {error}
+                  </div>
+                )}
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 4 }}>
+                  {loading ? "…" : "Set New Password"}
+                </button>
+              </form>
+            </>
+          ) : step === "reset_sent" ? (
+            <>
+              <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>
+                Check Your Email
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 12px" }}>
+                Reset link sent.
+              </h1>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 28px" }}>
+                We sent a password reset link to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>. Click the link in the email — it'll bring you back here to set a new password.
+              </p>
+              <button
+                className="btn btn-ghost"
+                onClick={() => { setStep("form"); setError(""); }}
+                style={{ fontSize: 13, padding: "10px 16px" }}
+              >
+                ← Back to Sign In
+              </button>
+            </>
+          ) : step === "forgot" ? (
+            <>
+              <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>
+                Forgot Password
+              </div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 12px" }}>
+                Reset your password.
+              </h1>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 28px" }}>
+                Enter the email you signed up with. We'll send a reset link.
+              </p>
+              <form onSubmit={handleForgotPassword} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <Field label="Email">
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" style={inputStyle} autoFocus />
+                </Field>
+                {error && (
+                  <div style={{ padding: "12px 14px", background: "var(--accent-red-soft)", borderLeft: "2px solid var(--accent-red)", color: "var(--accent-red)", fontSize: 13 }}>
+                    {error}
+                  </div>
+                )}
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ marginTop: 4 }}>
+                  {loading ? "…" : "Send Reset Link"}
+                </button>
+              </form>
+              <div style={{ marginTop: 16, textAlign: "center" }}>
+                <button className="btn btn-ghost" onClick={() => { setStep("form"); setError(""); }} style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  ← Back to Sign In
+                </button>
+              </div>
+            </>
+          ) : /* ── OTP step ── */
+          step === "otp" ? (
             <>
               <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>
                 Verify Email
@@ -281,6 +426,19 @@ export default function Auth() {
                     </button>
                   </div>
                 </Field>
+
+                {mode === "login" && (
+                  <div style={{ textAlign: "right", marginTop: -6 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => { setStep("forgot"); setError(""); }}
+                      style={{ fontSize: 11, padding: "4px 0", color: "var(--text-muted)" }}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
 
                 {mode === "signup" && (
                   <Field label="Confirm Password">
