@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getProfile, updateProfile, getHistory } from "../services/api";
-import { Grain, Logo, LogoutButton, ThemeToggle, useToast, ToastContainer } from "../components/shared";
+import { Grain, Logo, LogoutButton, ThemeToggle, useToast, ToastContainer, LocationPinIcon, ExternalLinkIcon } from "../components/shared";
 import { useAuth } from "../context/AuthContext";
 
 const PERSONA_LABEL = {
@@ -321,7 +321,7 @@ export default function Profile() {
         </div>
       </header>
 
-      <main style={{ flex: 1, maxWidth: 860, margin: "0 auto", width: "100%", padding: "40px 32px 80px" }}>
+      <main className="profile-main" style={{ flex: 1, maxWidth: 860, margin: "0 auto", width: "100%", padding: "40px 32px 80px" }}>
         <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--accent-red)", textTransform: "uppercase", marginBottom: 16 }}>
           Profile
         </div>
@@ -366,18 +366,21 @@ export default function Profile() {
 
                 <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "var(--text-secondary)" }}>
                   {profile?.location && (
-                    <span>📍 {profile.location}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <LocationPinIcon size={13} color="var(--text-muted)" />
+                      {profile.location}
+                    </span>
                   )}
                   {profile?.linkedin_url && (
                     <a href={profile.linkedin_url} target="_blank" rel="noopener noreferrer"
-                      style={{ color: "var(--accent-red)", textDecoration: "none" }}>
-                      LinkedIn ↗
+                      style={{ color: "var(--accent-red)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                      LinkedIn <ExternalLinkIcon size={11} color="var(--accent-red)" />
                     </a>
                   )}
                   {profile?.github_url && (
                     <a href={profile.github_url} target="_blank" rel="noopener noreferrer"
-                      style={{ color: "var(--accent-red)", textDecoration: "none" }}>
-                      GitHub ↗
+                      style={{ color: "var(--accent-red)", textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                      GitHub <ExternalLinkIcon size={11} color="var(--accent-red)" />
                     </a>
                   )}
                 </div>
@@ -397,7 +400,7 @@ export default function Profile() {
             </div>
 
             {/* ── Stats strip ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--border-default)", marginBottom: 28 }}>
+            <div className="profile-stats-strip" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "var(--border-default)", marginBottom: 28 }}>
               <StatBox label="Sessions" value={profile?.total_sessions ?? 0} />
               <StatBox
                 label="Avg Score"

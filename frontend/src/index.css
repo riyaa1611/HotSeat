@@ -199,8 +199,14 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
   background: var(--border-default); border: 1px solid var(--border-default);
 }
+.leaderboard-grid {
+  display: grid;
+  grid-template-columns: 56px 1fr 1fr 1fr 100px;
+  align-items: center;
+}
 
 @media (max-width: 768px) {
+  .home-nav-leaderboard { display: none !important; }
   .page-main { padding: 32px 20px 60px; }
   .hero-title { font-size: 40px; }
   .page-header { padding: 14px 20px; }
@@ -223,8 +229,9 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   .session-header { flex-wrap: wrap; gap: 8px; padding: 10px 14px !important; }
 
   /* Leaderboard */
-  .leaderboard-grid { grid-template-columns: 32px 1fr 90px 60px !important; }
-  .leaderboard-col-repo { display: none; }
+  .leaderboard-main { padding: 32px 20px 60px !important; }
+  .leaderboard-grid { grid-template-columns: 40px 1fr 1fr 80px !important; }
+  .leaderboard-col-repo { display: none !important; }
 }
 
 /* ═══════════════════════════════════════
@@ -486,4 +493,12 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
   .session-header-meta { display: none; }
   .report-score-bars { grid-template-columns: repeat(2, 1fr) !important; }
   .report-score-panel > div:last-child { display: none; }
+
+  /* Profile */
+  .profile-main { padding: 24px 16px 60px !important; }
+  .profile-stats-strip { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Leaderboard */
+  .leaderboard-grid { grid-template-columns: 36px 1fr 60px !important; }
+  .leaderboard-col-persona { display: none !important; }
 }

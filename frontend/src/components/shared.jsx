@@ -101,6 +101,37 @@ export function Grain() {
   return <div className="grain" />;
 }
 
+export function LocationPinIcon({ size = 14, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  );
+}
+
+export function ExternalLinkIcon({ size = 13, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", flexShrink: 0 }}>
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+      <polyline points="15 3 21 3 21 9"/>
+      <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+  );
+}
+
+export function RankBadge({ rank }) {
+  const colors = { 1: "#FFB800", 2: "#9BA3AF", 3: "#C07B3A" };
+  const color = colors[rank] || "var(--text-muted)";
+  if (rank > 3) return <span style={{ fontWeight: 700, fontSize: 14, color: "var(--text-muted)" }}>{rank}</span>;
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <circle cx="11" cy="11" r="10" fill={color} fillOpacity="0.15" stroke={color} strokeWidth="1.5"/>
+      <text x="11" y="15" textAnchor="middle" fill={color} fontSize="11" fontWeight="700" fontFamily="JetBrains Mono, monospace">{rank}</text>
+    </svg>
+  );
+}
+
 export function FlameIcon({ size = 18, color = "currentColor" }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">

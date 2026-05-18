@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Grain, Logo, ThemeToggle } from "../components/shared";
+import { Grain, Logo, ThemeToggle, RankBadge } from "../components/shared";
 import { getLeaderboard } from "../services/api";
 
 const PERSONA_LABEL = {
   investor: "Investor", tech_lead: "Tech Lead",
   hr_manager: "HR Manager", product_manager: "Product Manager",
+  behavioral: "Behavioral", resume_deepdive: "Resume Deep-Dive",
 };
-
-const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function Leaderboard() {
   const navigate = useNavigate();
@@ -30,7 +29,7 @@ export default function Leaderboard() {
         </div>
       </header>
 
-      <main style={{ flex: 1, maxWidth: 1100, margin: "0 auto", width: "100%", padding: "40px 40px 80px" }}>
+      <main className="leaderboard-main" style={{ flex: 1, maxWidth: 1100, margin: "0 auto", width: "100%", padding: "40px 40px 80px" }}>
         <div className="mono" style={{ fontSize: 10, letterSpacing: "0.22em", color: "var(--accent-red)", textTransform: "uppercase", marginBottom: 12 }}>
           Global Rankings
         </div>
@@ -50,9 +49,15 @@ export default function Leaderboard() {
         {!loading && entries.length > 0 && (
           <div style={{ border: "1px solid var(--border-default)" }}>
             {/* Header row */}
-            <div style={{ display: "grid", gridTemplateColumns: "56px 1fr 1fr 1fr 100px", background: "var(--bg-card-2)", borderBottom: "1px solid var(--border-default)", padding: "12px 24px" }}>
-              {["#", "User", "Persona", "Repo", "Score"].map((h) => (
-                <div key={h} className="mono" style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-muted)" }}>{h}</div>
+            <div className="leaderboard-grid" style={{ background: "var(--bg-card-2)", borderBottom: "1px solid var(--border-default)", padding: "12px 24px" }}>
+              {[
+                { label: "#", cls: "" },
+                { label: "User", cls: "" },
+                { label: "Persona", cls: "leaderboard-col-persona" },
+                { label: "Repo", cls: "leaderboard-col-repo" },
+                { label: "Score", cls: "" },
+              ].map(({ label, cls }) => (
+                <div key={label} className={`mono${cls ? ` ${cls}` : ""}`} style={{ fontSize: 9, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--text-muted)" }}>{label}</div>
               ))}
             </div>
 
@@ -61,19 +66,19 @@ export default function Leaderboard() {
               return (
                 <div
                   key={i}
+                  className="leaderboard-grid"
                   style={{
-                    display: "grid", gridTemplateColumns: "56px 1fr 1fr 1fr 100px",
                     padding: "16px 24px", alignItems: "center",
                     borderBottom: i < entries.length - 1 ? "1px solid var(--border-default)" : "none",
                     background: i < 3 ? "rgba(226,75,74,0.03)" : "var(--bg-card)",
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 14, color: i < 3 ? "var(--accent-red)" : "var(--text-muted)" }}>
-                    {MEDALS[i] || `${i + 1}`}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <RankBadge rank={i + 1} />
                   </div>
                   <div className="mono" style={{ fontSize: 12, color: "var(--text-secondary)", letterSpacing: "0.06em" }}>{e.user}</div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>{PERSONA_LABEL[e.persona] || e.persona}</div>
-                  <div className="mono" style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.repo}</div>
+                  <div className="leaderboard-col-persona" style={{ fontSize: 13, color: "var(--text-secondary)" }}>{PERSONA_LABEL[e.persona] || e.persona}</div>
+                  <div className="leaderboard-col-repo mono" style={{ fontSize: 12, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.repo}</div>
                   <div style={{ fontWeight: 700, fontSize: 13, color }}>{e.overall}<span style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 400 }}>/10</span></div>
                 </div>
               );

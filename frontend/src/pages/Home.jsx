@@ -94,11 +94,11 @@ export default function Home() {
             background: "var(--accent-amber-soft)", border: "1px solid var(--accent-amber)",
             padding: "4px 10px", textTransform: "uppercase",
           }}>
-            🔥 {streakCount} this week
+            <FlameIcon size={12} color="var(--accent-amber)" /> {streakCount} this week
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link to="/leaderboard" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 14 }}>Leaderboard</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <Link to="/leaderboard" className="btn btn-ghost home-nav-leaderboard" style={{ padding: "6px 12px", fontSize: 14 }}>Leaderboard</Link>
           <Link to="/profile" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 14 }}>Profile</Link>
           <ThemeToggle />
           <LogoutButton />
