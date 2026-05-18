@@ -1,8 +1,18 @@
-function MicIcon({ size = 20, color = "currentColor", filled = false }) {
+function MicIcon({ size = 16, color = "currentColor", filled = false }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
       <rect x="9" y="2" width="6" height="12" rx="3" fill={filled ? color : "none"} />
       <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" />
+    </svg>
+  );
+}
+
+function MicOffIcon({ size = 16, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" />
+      <line x1="2" y1="2" x2="22" y2="22" />
     </svg>
   );
 }
@@ -20,20 +30,40 @@ export default function VoiceInput({ isListening, isSupported, onToggle }) {
       </div>
     );
   }
+
   return (
     <button
       type="button"
       onClick={onToggle}
-      className={`btn ${isListening ? "pulse-red" : ""}`}
+      className={`btn${isListening ? " pulse-red" : ""}`}
       style={{
-        width: 56, padding: 0,
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "0 16px", minWidth: 130, justifyContent: "center",
         background: isListening ? "var(--accent-red)" : "var(--bg-input)",
         borderColor: isListening ? "var(--accent-red)" : "var(--border-default)",
         color: isListening ? "#fff" : "var(--text-primary)",
+        transition: "background 150ms ease, border-color 150ms ease, color 150ms ease",
       }}
-      aria-label="Toggle microphone"
+      aria-label={isListening ? "Stop microphone" : "Start microphone"}
+      title={isListening ? "Click or press M to stop mic" : "Click or press M to start mic"}
     >
-      <MicIcon size={20} filled={isListening} />
+      {isListening ? (
+        <>
+          <MicIcon size={16} filled color="#fff" />
+          <span className="mono" style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" }}>Stop Mic</span>
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: "#fff", opacity: 0.9,
+            animation: "pulseOpacity 1s ease-in-out infinite",
+            flexShrink: 0,
+          }} />
+        </>
+      ) : (
+        <>
+          <MicIcon size={16} />
+          <span className="mono" style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" }}>Start Mic</span>
+        </>
+      )}
     </button>
   );
 }

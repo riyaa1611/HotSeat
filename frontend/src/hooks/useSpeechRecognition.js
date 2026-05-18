@@ -98,8 +98,13 @@ export function useSpeechRecognition({ onTranscript, onAutoSend, onSilenceTimeou
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
+      clearTimeout(silenceTimer.current);
+      try {
+        recognitionRef.current.start();
+      } catch {
+        return;
+      }
       shouldListenRef.current = true;
-      recognitionRef.current.start();
       setIsListening(true);
       silenceTimer.current = setTimeout(() => {
         shouldListenRef.current = false;

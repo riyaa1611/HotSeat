@@ -93,6 +93,7 @@ input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:foc
 @keyframes pulseDot { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
 @keyframes skeleton { 0% { background-position: -200px 0; } 100% { background-position: 200px 0; } }
 @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.92; } }
+@keyframes pulseOpacity { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
 .fade-in { animation: fadeIn 200ms ease-out both; }
 .pulse-red { animation: pulseRed 1.4s ease-out infinite; }
