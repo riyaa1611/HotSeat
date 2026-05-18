@@ -1,8 +1,8 @@
 # HotSeat
 
-**AI-powered pitch practice. Get grilled before the real thing.**
+**AI-powered pitch and interview practice. Get grilled before the real thing.**
 
-Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 questions designed to find every weak spot in your pitch — then get a scored evaluation report across 5 dimensions.
+Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 questions designed to find every weak spot in your pitch or interview answers — then get a scored evaluation report with per-answer breakdown, progress tracking, and a full user profile.
 
 ![HotSeat](frontend/public/favicon.png)
 
@@ -10,14 +10,22 @@ Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 qu
 
 ## What it does
 
+- **Two practice modes** — Project Pitch (paste a repo/URL) or Interview Prep (upload resume + GitHub)
 - **Reads your project** — parses your GitHub repo (README, file tree, key config files) or scrapes a deployed project URL
-- **Grills you in character** — 4 AI personas each with a distinct agenda, tone, and blind spots they'll exploit
-- **Scores you honestly** — post-session report with per-dimension scores, specific strengths/weaknesses, and one concrete action item
-- **Remembers your history** — track improvement across sessions, grouped by project with trend charts
+- **Reads your resume** — parses PDF resume and fetches your GitHub profile to build a personalised interview context
+- **Grills you in character** — 6 AI personas each with a distinct agenda, tone, and blind spots they'll exploit
+- **Scores you honestly** — post-session report with per-dimension scores, per-answer breakdown, specific strengths/weaknesses, and one concrete action item
+- **Confidence feedback** — real-time confidence score on every message you send (filler detection, structure, specificity)
+- **Tracks your progress** — score trend chart, activity heatmap, streak counter, full session history grouped by project or role
+- **User profile** — editable identity card (bio, job title, company, location, LinkedIn, GitHub), GitHub-style activity heatmap, score progress chart
+- **Share reports** — generate a public share link for any session report
+- **Export to PDF** — download any report with one click
 
 ---
 
 ## Personas
+
+### Project Pitch
 
 | Persona | Agenda |
 |---|---|
@@ -25,6 +33,13 @@ Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 qu
 | **Tech Lead** | 15 years of PRs. Wants to know why you made specific choices and where the tests are. |
 | **HR Manager** | 12 years of behavioral interviews. Smells rehearsed answers from a mile away. |
 | **Product Manager** | Shipped 20 products, killed 15. Cares about users and whether they'll pay. |
+
+### Interview Prep
+
+| Persona | Agenda |
+|---|---|
+| **Behavioral** | HR interviewer with 12 years of experience. No buzzwords, no rehearsed answers. |
+| **Resume Deep-Dive** | Senior recruiter who goes line by line. Claims, gaps, consistency — nothing slides. |
 
 ---
 
@@ -34,11 +49,15 @@ Paste a GitHub repo or project URL, pick a brutal AI interrogator, survive 12 qu
 - Python · FastAPI · Groq API (`llama-3.3-70b-versatile`)
 - Supabase (PostgreSQL + Auth + Row Level Security)
 - httpOnly cookie auth · SSRF-guarded URL scraping · Per-user rate limiting
+- PDF resume parsing · GitHub profile fetching with retry + backoff
+- `user_profiles` table for persistent profile data
 
 **Frontend**
 - React · Vite · React Router
 - Browser Web Speech API (TTS + STT)
 - Supabase JS client · Axios
+- GitHub-style activity heatmap · SVG score progress chart
+- `@media print` PDF export
 
 ---
 
@@ -104,8 +123,6 @@ cd backend
 python -m pytest tests/ -v
 ```
 
-36 tests, all passing.
-
 ---
 
 ## Project Structure
@@ -114,18 +131,20 @@ python -m pytest tests/ -v
 hotseat/
 ├── backend/
 │   ├── app/
-│   │   ├── routers/        # parse-repo, session, report, auth
-│   │   ├── services/       # repo_parser, url_scraper, conversation, evaluator, groq_client
+│   │   ├── routers/        # repo, session, report, interview, user, auth
+│   │   ├── services/       # repo_parser, url_scraper, conversation, evaluator,
+│   │   │                   # interview_prompt_engine, interview_context_builder,
+│   │   │                   # interview_evaluator, resume_parser, groq_client
 │   │   ├── models/         # schemas, database
 │   │   ├── auth.py         # httpOnly cookie auth via Supabase
 │   │   ├── config.py       # pydantic settings
 │   │   └── main.py         # FastAPI app, CORS, rate limiter
-│   └── tests/              # 36 async tests
+│   └── tests/
 └── frontend/
     └── src/
-        ├── pages/          # Landing, Auth, Home, Session, Report, History, SharedReport
-        ├── components/     # ChatWindow, VoiceInput, Timer, PersonaSelector, ...
-        ├── hooks/          # useSession, useSpeechRecognition, useTTS, ...
+        ├── pages/          # Home, Session, Report, History, Profile, SharedReport, Auth
+        ├── components/     # ChatWindow, ResumeInput, VoiceInput, PersonaSelector, ...
+        ├── hooks/          # useSession, useConfidence, useSpeechRecognition, useTTS, ...
         ├── services/       # api.js (axios + fetch SSE)
         └── context/        # AuthContext (Supabase + backend cookie sync)
 ```
@@ -139,5 +158,5 @@ hotseat/
 - Per-user rate limiting — 10 req/min on session start, 30 req/min on responses
 - Input length caps on all user-supplied fields
 - CORS locked to explicit frontend origin
-- Row Level Security enabled on the sessions table
+- Row Level Security enabled on all tables (sessions, shared_reports, user_profiles)
 - `/docs` disabled in production
