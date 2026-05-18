@@ -99,13 +99,20 @@ async def _ensure_session_loaded(session_id: str, user_id: str) -> None:
 async def respond(request: Request, body: RespondRequest, user_id: str = Depends(get_current_user)):
     await _ensure_session_loaded(body.session_id, user_id)
 
-    result = await _manager.respond(body.session_id, body.message)
+    try:
+        result = await _manager.respond(body.session_id, body.message)
+    except Exception:
+        logger.exception("respond: session manager failed for session %s", body.session_id)
+        raise HTTPException(status_code=502, detail="Failed to get AI response. Please try again.")
 
-    await update_session(
-        body.session_id,
-        _manager.get_messages(body.session_id),
-        result["turn_count"],
-    )
+    try:
+        await update_session(
+            body.session_id,
+            _manager.get_messages(body.session_id),
+            result["turn_count"],
+        )
+    except Exception:
+        logger.warning("respond: failed to persist session %s to DB (non-fatal)", body.session_id)
 
     return RespondResponse(**result)
 
@@ -143,8 +150,17 @@ async def end_session(request: EndSessionRequest, user_id: str = Depends(get_cur
     await _ensure_session_loaded(request.session_id, user_id)
 
     messages = _manager.get_messages(request.session_id)
-    report = await evaluate_session(messages)
 
-    await save_report(request.session_id, report)
+    try:
+        report = await evaluate_session(messages)
+    except Exception:
+        logger.exception("end_session: evaluate_session failed for session %s", request.session_id)
+        raise HTTPException(status_code=502, detail="Failed to generate report. Please try again.")
+
+    try:
+        await save_report(request.session_id, report)
+    except Exception:
+        logger.exception("end_session: save_report failed for session %s", request.session_id)
+        raise HTTPException(status_code=500, detail="Report generated but could not be saved.")
 
     return EndSessionResponse(report=report)

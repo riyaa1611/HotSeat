@@ -1,6 +1,9 @@
 import json
 import re
+import logging
 from app.services.groq_client import chat as groq_chat
+
+logger = logging.getLogger(__name__)
 
 INTERVIEW_EVAL_PROMPT = """
 You just finished interviewing a job candidate. Here is the full conversation.
@@ -52,19 +55,54 @@ FALLBACK_REPORT = {
 }
 
 
+_SCORE_FIELDS = {"communication", "confidence", "problem_solving", "culture_fit", "honesty", "overall"}
+_REQUIRED_FIELDS = _SCORE_FIELDS | {"strengths", "weaknesses", "action_item", "answer_breakdown"}
+
+
 def _parse_json_response(raw: str) -> dict:
     clean = re.sub(r"```(?:json)?\s*", "", raw).strip().rstrip("`").strip()
     return json.loads(clean)
 
 
+def _validate_and_clamp(data: dict) -> dict:
+    missing = _REQUIRED_FIELDS - data.keys()
+    if missing:
+        raise ValueError(f"LLM response missing fields: {missing}")
+    for field in _SCORE_FIELDS:
+        val = data[field]
+        if not isinstance(val, (int, float)):
+            raise ValueError(f"Score field '{field}' is not numeric: {val!r}")
+        data[field] = max(1, min(10, int(round(val))))
+    if not isinstance(data["strengths"], list) or len(data["strengths"]) < 1:
+        raise ValueError("strengths must be a non-empty list")
+    if not isinstance(data["weaknesses"], list) or len(data["weaknesses"]) < 1:
+        raise ValueError("weaknesses must be a non-empty list")
+    if not isinstance(data["action_item"], str) or not data["action_item"].strip():
+        raise ValueError("action_item must be a non-empty string")
+    if not isinstance(data["answer_breakdown"], list):
+        raise ValueError("answer_breakdown must be a list")
+    for entry in data["answer_breakdown"]:
+        if "score" in entry and isinstance(entry["score"], (int, float)):
+            entry["score"] = max(1, min(10, int(round(entry["score"]))))
+    return data
+
+
 async def evaluate_interview(messages: list[dict]) -> dict:
     eval_messages = [
-        {"role": "system", "content": "You are an objective evaluator. Return only valid JSON."},
+        {"role": "system", "content": "You are an objective evaluator. Return only valid JSON. Do not invent information not present in the conversation."},
         *messages,
         {"role": "user", "content": INTERVIEW_EVAL_PROMPT},
     ]
-    raw = await groq_chat(eval_messages)
+
     try:
-        return _parse_json_response(raw)
-    except (json.JSONDecodeError, KeyError, ValueError):
+        raw = await groq_chat(eval_messages, temperature=0.3, max_tokens=1024)
+    except Exception:
+        logger.exception("evaluate_interview: groq_chat failed")
+        return FALLBACK_REPORT.copy()
+
+    try:
+        data = _parse_json_response(raw)
+        return _validate_and_clamp(data)
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError) as e:
+        logger.warning("evaluate_interview: invalid LLM response (%s), returning fallback", e)
         return FALLBACK_REPORT.copy()

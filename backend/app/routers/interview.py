@@ -91,7 +91,17 @@ async def end_interview(
         raise HTTPException(status_code=404, detail="Session not found")
 
     messages = _manager.get_messages(body.session_id)
-    report = await evaluate_interview(messages)
-    await save_report(body.session_id, report)
+
+    try:
+        report = await evaluate_interview(messages)
+    except Exception:
+        logger.exception("end_interview: evaluate_interview failed for session %s", body.session_id)
+        raise HTTPException(status_code=502, detail="Failed to generate report. Please try again.")
+
+    try:
+        await save_report(body.session_id, report)
+    except Exception:
+        logger.exception("end_interview: save_report failed for session %s", body.session_id)
+        raise HTTPException(status_code=500, detail="Report generated but could not be saved.")
 
     return EndInterviewResponse(report=report)

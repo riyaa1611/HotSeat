@@ -1,7 +1,10 @@
+import logging
 from datetime import datetime
 from app.services.prompt_engine import get_persona_prompt
 from app.services.groq_client import chat as groq_chat, stream_chat as groq_stream_chat
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 WRAP_UP_INJECTION = {
     "role": "system",
@@ -9,6 +12,7 @@ WRAP_UP_INJECTION = {
 }
 
 EMPTY_ANSWER_RESPONSE = "Did you just waste my time? Answer the question."
+LLM_ERROR_RESPONSE = "Technical issue on my end. Try again."
 
 
 class SessionManager:
@@ -34,7 +38,11 @@ class SessionManager:
         settings = get_settings()
 
         if user_message == "__INIT__":
-            response = await groq_chat(session["messages"])
+            try:
+                response = await groq_chat(session["messages"])
+            except Exception:
+                logger.exception("respond __INIT__: groq_chat failed for session %s", session_id)
+                raise
             session["messages"].append({"role": "assistant", "content": response})
             return {"response": response, "turn_count": 0, "is_final": False}
 
@@ -47,7 +55,18 @@ class SessionManager:
         if session["turn_count"] >= settings.wrap_up_turn:
             session["messages"].append(WRAP_UP_INJECTION)
 
-        response = await groq_chat(session["messages"])
+        try:
+            response = await groq_chat(session["messages"])
+        except Exception:
+            logger.exception("respond: groq_chat failed for session %s turn %d", session_id, session["turn_count"])
+            session["messages"].pop()
+            session["turn_count"] -= 1
+            return {
+                "response": LLM_ERROR_RESPONSE,
+                "turn_count": session["turn_count"],
+                "is_final": False,
+            }
+
         session["messages"].append({"role": "assistant", "content": response})
 
         return {
@@ -71,11 +90,20 @@ class SessionManager:
             session["messages"].append(WRAP_UP_INJECTION)
 
         full_response = ""
-        async for chunk in groq_stream_chat(session["messages"]):
-            full_response += chunk
-            yield chunk
+        try:
+            async for chunk in groq_stream_chat(session["messages"]):
+                full_response += chunk
+                yield chunk
+        except Exception:
+            logger.exception("stream_respond: stream failed for session %s turn %d", session_id, session["turn_count"])
+            if not full_response:
+                session["messages"].pop()
+                session["turn_count"] -= 1
+                yield LLM_ERROR_RESPONSE
+                return
 
-        session["messages"].append({"role": "assistant", "content": full_response})
+        if full_response:
+            session["messages"].append({"role": "assistant", "content": full_response})
 
     def get_session_meta(self, session_id: str) -> dict:
         session = self.sessions[session_id]
