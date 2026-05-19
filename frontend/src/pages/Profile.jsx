@@ -223,16 +223,16 @@ function EditModal({ profile, onSave, onClose }) {
         </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {[
-            { key: "display_name", label: "Display Name", max: 80 },
+            { key: "display_name", label: "Display Name *", max: 80, required: true },
             { key: "job_title", label: "Job Title", max: 120 },
             { key: "company", label: "Company", max: 120 },
             { key: "location", label: "Location", max: 120 },
             { key: "linkedin_url", label: "LinkedIn URL", max: 300 },
             { key: "github_url", label: "GitHub URL", max: 300 },
-          ].map(({ key, label, max }) => (
+          ].map(({ key, label, max, required }) => (
             <div key={key}>
               <div className="mono" style={{ fontSize: 9, color: "var(--text-muted)", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
-              <input type="text" value={form[key]} onChange={(e) => set(key, e.target.value)} maxLength={max} style={{ fontSize: 13, padding: "10px 12px" }} />
+              <input type="text" value={form[key]} onChange={(e) => set(key, e.target.value)} maxLength={max} required={required} style={{ fontSize: 13, padding: "10px 12px" }} />
             </div>
           ))}
           <div>

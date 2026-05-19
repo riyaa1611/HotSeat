@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
+import { updateProfile } from "../services/api";
 import { Grain, Logo, ThemeToggle } from "../components/shared";
 
 const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "";
@@ -99,6 +100,7 @@ export default function Auth() {
   }, []);
 
   const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -134,6 +136,11 @@ export default function Auth() {
 
     if (HCAPTCHA_SITE_KEY && !captchaToken) {
       setError("Please complete the CAPTCHA.");
+      return;
+    }
+
+    if (mode === "signup" && !displayName.trim()) {
+      setError("Display name is required.");
       return;
     }
 
@@ -180,6 +187,8 @@ export default function Auth() {
     });
     if (error) {
       setError(error.message.includes("expired") ? "Code expired. Request a new one." : "Invalid code. Check your email and try again.");
+    } else if (displayName.trim()) {
+      try { await updateProfile({ display_name: displayName.trim() }); } catch { /* non-fatal */ }
     }
     setLoading(false);
   }, [email]);
@@ -234,6 +243,7 @@ export default function Auth() {
     setMode(mode === "login" ? "signup" : "login");
     setStep("form");
     setError("");
+    setDisplayName("");
     resetCaptcha();
   }
 
@@ -409,6 +419,11 @@ export default function Auth() {
               </h1>
 
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {mode === "signup" && (
+                  <Field label="Display Name *">
+                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required placeholder="How you'll appear on the leaderboard" maxLength={80} style={inputStyle} autoFocus />
+                  </Field>
+                )}
                 <Field label="Email">
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="you@example.com" style={inputStyle} />
                 </Field>
