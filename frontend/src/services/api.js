@@ -10,12 +10,29 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Retry on network errors (not 4xx/5xx)
+// Retry on network errors (not 4xx/5xx); re-sync cookie on 401 then retry once
 api.interceptors.response.use(
   (r) => r,
   async (err) => {
     const cfg = err.config;
-    if (!cfg || cfg._retryCount >= 2 || err.response) return Promise.reject(err);
+    if (!cfg) return Promise.reject(err);
+    // On 401, try re-syncing the backend session cookie once
+    if (err.response?.status === 401 && !cfg._cookieRetried) {
+      cfg._cookieRetried = true;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await fetch(`${BASE_URL}/auth/session`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+            credentials: "include",
+            body: JSON.stringify({ access_token: session.access_token }),
+          });
+        }
+      } catch { /* ignore */ }
+      return api(cfg);
+    }
+    if (cfg._retryCount >= 2 || err.response) return Promise.reject(err);
     cfg._retryCount = (cfg._retryCount || 0) + 1;
     await new Promise((r) => setTimeout(r, 1000 * cfg._retryCount));
     return api(cfg);
