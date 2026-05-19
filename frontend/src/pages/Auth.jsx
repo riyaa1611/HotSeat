@@ -434,7 +434,7 @@ export default function Auth() {
                       type="button"
                       className="btn btn-ghost"
                       onClick={() => { setStep("forgot"); setError(""); }}
-                      style={{ fontSize: 11, padding: "4px 0", color: "var(--text-muted)" }}
+                      style={{ fontSize: 11, padding: "4px 0", color: "var(--text-muted)", border: "none", background: "none" }}
                     >
                       Forgot password?
                     </button>
