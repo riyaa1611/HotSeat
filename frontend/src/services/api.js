@@ -130,7 +130,7 @@ export async function startInterview(resumeFile, githubUrl, role, persona, displ
   form.append("persona", persona);
   form.append("display_name", displayName);
   const { data } = await api.post("/start-interview", form, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: { "Content-Type": undefined },
     timeout: 60000,
   });
   return data;
