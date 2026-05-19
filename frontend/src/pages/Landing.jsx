@@ -74,8 +74,8 @@ export default function Landing() {
       <nav className="landing-nav">
         <Logo size="sm" />
         <div className="landing-nav-links">
-          <a href="#how" className="landing-nav-link">How it works</a>
-          <a href="#personas" className="landing-nav-link">Personas</a>
+          <a href="#modes" className="landing-nav-link">Modes</a>
+          <a href="#personas" className="landing-nav-link">Interrogators</a>
           <a href="#proof" className="landing-nav-link">Results</a>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -92,7 +92,7 @@ export default function Landing() {
         <div className="landing-hero-left">
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid rgba(226,75,74,0.3)", padding: "5px 12px", marginBottom: 28, background: "rgba(226,75,74,0.06)", width: "fit-content" }}>
             <LiveDot />
-            <span className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent-red)" }}>Pitch Practice · Live</span>
+            <span className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent-red)" }}>Pitch Practice · Interview Prep · Live</span>
           </div>
 
           <h1 className="landing-h1">
@@ -100,20 +100,20 @@ export default function Landing() {
           </h1>
 
           <p className="landing-sub">
-            Drop your repo or project URL. Pick your interrogator. Survive 12 questions designed to find every weak spot in your pitch — so the real meeting doesn't.
+            Pitch your project to ruthless AI interrogators — or upload your resume and face a real job interview. 12 brutal questions designed to find every weak spot before the actual meeting does.
           </p>
 
           <div style={{ display: "flex", gap: 12, marginBottom: 48, flexWrap: "wrap" }}>
             <button className="btn btn-primary" onClick={() => navigate("/auth")} style={{ fontSize: 14, padding: "14px 28px", letterSpacing: "0.06em" }}>
               Start for Free →
             </button>
-            <a href="#how" className="btn btn-ghost" style={{ fontSize: 12, padding: "14px 20px", color: "var(--text-muted)", textDecoration: "none" }}>
+            <a href="#modes" className="btn btn-ghost" style={{ fontSize: 12, padding: "14px 20px", color: "var(--text-muted)", textDecoration: "none" }}>
               See how it works ↓
             </a>
           </div>
 
           <div className="landing-stats" ref={statsRef}>
-            <AnimatedStat target={4} label="Interrogators" active={statsActive} />
+            <AnimatedStat target={6} label="Interrogators" active={statsActive} />
             <AnimatedStat target={12} label="Questions / session" active={statsActive} />
             <AnimatedStat target={8} prefix="~" label="Minutes avg" active={statsActive} />
             <div>
@@ -131,7 +131,6 @@ export default function Landing() {
           <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 50% 55%, rgba(226,75,74,0.06) 0%, transparent 65%)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", inset: 0, backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.03) 3px, rgba(0,0,0,0.03) 4px)", pointerEvents: "none" }} />
 
-          {/* Type art — center */}
           <div className="landing-type-art">
             <div className="mono" style={{ fontSize: 10, letterSpacing: "0.28em", color: "rgba(226,75,74,0.45)", textTransform: "uppercase", marginBottom: 10 }}>— Session in progress</div>
             <span style={{ display: "block", fontFamily: "'Inter',sans-serif", fontWeight: 900, letterSpacing: "-0.06em", lineHeight: 0.85, color: "transparent", WebkitTextStroke: "2px rgba(226,75,74,0.35)" }} className="landing-type-word">HOT</span>
@@ -143,7 +142,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* Pulse — top right */}
           <div style={{ position: "absolute", top: 24, right: 24, zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
             <PulseRings />
             <span className="mono" style={{ fontSize: 8, letterSpacing: "0.22em", color: "rgba(226,75,74,0.55)", textTransform: "uppercase" }}>Live · Active</span>
@@ -151,15 +149,17 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── QUESTION STRIP — full width marquee ── */}
+      {/* ── QUESTION STRIP ── */}
       {(() => {
         const pills = [
           ["Investor", "\"What's your CAC and why should I believe that number?\""],
+          ["Behavioral", "\"That sounds rehearsed. What actually happened?\""],
           ["Tech Lead", "\"Where are the tests? Walk me through error handling.\""],
-          ["HR Manager", "\"That sounds rehearsed. What actually went wrong?\""],
+          ["Resume", "\"You list Python here — walk me through the hardest bug you debugged with it.\""],
           ["PM", "\"Who asked for this? Name one specific user.\""],
+          ["Behavioral", "\"You 'led' the team — how many people exactly?\""],
           ["Investor", "\"You and what army? Why this team?\""],
-          ["Tech Lead", "\"Did you actually write this or did ChatGPT?\""],
+          ["Resume", "\"There's a gap here between these two roles. What happened?\""],
         ];
         const renderPills = (prefix) => pills.map(([role, q], i) => (
           <div key={`${prefix}-${i}`} className="landing-pill" style={{ flexShrink: 0 }}>
@@ -171,7 +171,7 @@ export default function Landing() {
           <div className="landing-strip">
             <span className="mono landing-strip-label">Real questions →</span>
             <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-              <div className="landing-marquee-track" style={{ animationDuration: "28s" }}>
+              <div className="landing-marquee-track" style={{ animationDuration: "32s" }}>
                 {renderPills("a")}
                 {renderPills("b")}
               </div>
@@ -180,24 +180,47 @@ export default function Landing() {
         );
       })()}
 
-      {/* ── HOW IT WORKS ── */}
-      <section id="how" className="landing-section">
-        <div className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>How it works</div>
-        <h2 className="landing-h2">Three steps to a better pitch.</h2>
-        <p className="landing-section-sub">No setup required. Paste, pick, and prepare to defend every decision you've made.</p>
-        <div className="landing-steps">
-          {[
-            ["01", <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>, "Paste your project", "Drop a GitHub repo URL or deployed project link. HotSeat reads your code and stack to ask questions specific to what you built — not generic startup advice."],
-            ["02", <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, "Pick your interrogator", "Investor, Tech Lead, HR Manager, or Product Manager. Each has a different agenda and a different way to expose your gaps. No easy options."],
-            ["03", <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-red)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, "Survive 12 questions", "No hints. No encouragement. Dodge and they'll call it out. Finish and get a scored report across 5 dimensions with one action item."],
-          ].map(([num, icon, title, desc]) => (
-            <div key={num} className="landing-step">
-              <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: "var(--accent-red)", marginBottom: 20 }}>{num}</div>
-              <div style={{ width: 40, height: 40, border: "1px solid var(--border-strong)", display: "grid", placeItems: "center", marginBottom: 20 }}>{icon}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{title}</h3>
-              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6 }}>{desc}</p>
+      {/* ── TWO MODES ── */}
+      <section id="modes" className="landing-section">
+        <div className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>Two modes</div>
+        <h2 className="landing-h2">Pitch practice or job prep — your call.</h2>
+        <p className="landing-section-sub">Same brutal format. Different target. Pick the one that matters right now.</p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 2, marginTop: 40 }}>
+          {/* Project Pitch */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-default)", padding: "36px 32px" }}>
+            <div className="mono" style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 16 }}>Mode 01 — Project Pitch</div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 14 }}>Defend your project.</h3>
+            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 24 }}>
+              Paste a GitHub repo or deployed URL. HotSeat reads your stack and code, then sends in an Investor, Tech Lead, HR Manager, or PM to find every gap before a real one does.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Reads your actual code and stack", "4 interrogator personas", "12 questions per session", "Scored report across 5 dimensions"].map(f => (
+                <div key={f} className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.08em", display: "flex", gap: 8 }}>
+                  <span style={{ color: "var(--accent-red)" }}>—</span>{f}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Interview Prep */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--accent-red)", padding: "36px 32px", position: "relative" }}>
+            <div style={{ position: "absolute", top: -1, right: 20, background: "var(--accent-red)", padding: "3px 10px" }}>
+              <span className="mono" style={{ fontSize: 8, letterSpacing: "0.2em", textTransform: "uppercase", color: "#fff" }}>New</span>
+            </div>
+            <div className="mono" style={{ fontSize: 9, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 16 }}>Mode 02 — Interview Prep</div>
+            <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 14 }}>Ace the job interview.</h3>
+            <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.7, marginBottom: 24 }}>
+              Upload your resume and optionally link your GitHub profile. Get drilled by a Behavioral interviewer who spots rehearsed answers, or a Resume Deep-Dive who goes line by line through everything you claim.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Resume + GitHub profile analysis", "Behavioral & Resume Deep-Dive modes", "Per-answer confidence scoring", "PDF report export"].map(f => (
+                <div key={f} className="mono" style={{ fontSize: 11, color: "var(--text-muted)", letterSpacing: "0.08em", display: "flex", gap: 8 }}>
+                  <span style={{ color: "var(--accent-red)" }}>—</span>{f}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -205,7 +228,11 @@ export default function Landing() {
       <section id="personas" className="landing-section" style={{ background: "var(--bg-card)" }}>
         <div className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>The interrogators</div>
         <h2 className="landing-h2">Pick your poison.</h2>
-        <p className="landing-section-sub">Four personas. Four different ways to expose your weaknesses.</p>
+        <p className="landing-section-sub">Six personas. Six different ways to expose your weaknesses. No easy options.</p>
+
+        <div className="mono" style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 40, marginBottom: 16, borderBottom: "1px solid var(--border-default)", paddingBottom: 10 }}>
+          Project Pitch Interrogators
+        </div>
         <div className="landing-personas">
           {[
             ["Investor", "The VC", "Seen 200 pitches this month. Funded zero. Allergic to buzzwords, impatient with vague TAM, will ask \"so what?\" until you have a real answer.", "\"You and what army? Why does this specific team win against a well-funded competitor who copies you next month?\""],
@@ -222,11 +249,34 @@ export default function Landing() {
             </div>
           ))}
         </div>
+
+        <div className="mono" style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--text-muted)", marginTop: 48, marginBottom: 16, borderBottom: "1px solid var(--border-default)", paddingBottom: 10 }}>
+          Interview Prep Personas
+        </div>
+        <div className="landing-personas" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
+          {[
+            ["Behavioral", "The Lie Detector", "12 years of interviewing. Heard every STAR answer ever written. If it sounds rehearsed, they'll call it out and ask for the real version — the one where you failed.", "\"Tell me about yourself in two sentences. No buzzwords.\" — then picks apart every word."],
+            ["Resume Deep-Dive", "The Auditor", "Read your resume twice and is already looking for inconsistencies, inflated claims, and unexplained gaps. Goes line by line. If you listed it, you're getting asked about it.", "\"This says you 'led' the team — how many people exactly? Because the dates overlap with your previous role.\""],
+          ].map(([tag, title, desc, q]) => (
+            <div key={tag} className="landing-persona-card" style={{ borderColor: "rgba(226,75,74,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "var(--accent-red)" }}>{tag}</div>
+                <span style={{ background: "rgba(226,75,74,0.1)", border: "1px solid rgba(226,75,74,0.3)", padding: "2px 7px" }} className="mono">
+                  <span style={{ fontSize: 8, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--accent-red)" }}>Interview mode</span>
+                </span>
+              </div>
+              <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 10 }}>{title}</h3>
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: 20 }}>{desc}</p>
+              <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--border-strong)", marginBottom: 6 }}>Sample question</div>
+              <div style={{ borderLeft: "2px solid var(--accent-red)", paddingLeft: 14, fontSize: 13, color: "var(--text-muted)", fontStyle: "italic", lineHeight: 1.6 }}>{q}</div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ── MARQUEE ── */}
       {(() => {
-        const items = ["No coddling", "No participation trophies", "12 questions per session", "Specific to your project", "Full performance report", "Works on any repo or URL", "Free to start", "No mercy", "No shortcuts", "Real questions", "Real feedback"];
+        const items = ["No coddling", "No participation trophies", "12 questions per session", "Specific to your project or resume", "Full performance report", "Per-answer confidence scoring", "PDF export", "Activity heatmap", "Free to start", "No mercy", "No shortcuts", "Real questions", "Real feedback", "Resume analysis", "GitHub profile scan"];
         const renderItems = (prefix) => items.map((t, i) => (
           <div key={`${prefix}-${i}`} className="landing-marquee-item">
             <span style={{ color: "var(--accent-red)", marginRight: 10 }}>—</span>{t}
@@ -246,11 +296,11 @@ export default function Landing() {
       <section id="proof" className="landing-section">
         <div className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--accent-red)", marginBottom: 12 }}>After the session</div>
         <h2 className="landing-h2">Know exactly where you stand.</h2>
-        <p className="landing-section-sub">Every session ends with a full report — scored across 5 dimensions, with specific strengths, weaknesses, and one action item.</p>
+        <p className="landing-section-sub">Every session ends with a full scored report — strengths, weaknesses, confidence breakdown, and one action item. Export as PDF.</p>
         <div className="landing-proof">
           {[
             ["\"I thought I knew my product cold. The investor persona found three gaps in my business model in four minutes. My actual investor meeting went much better.\"", "Arjun S.", "Founder, dev tools startup"],
-            ["\"The tech lead asked about my database indexing strategy and I realized I had no answer. Fixed it before my interview. Got the offer.\"", "Priya M.", "Senior engineer"],
+            ["\"The resume deep-dive asked about a gap in my timeline I thought nobody would notice. Fixed my answer before the real interview. Got the offer.\"", "Priya M.", "Senior engineer"],
             ["\"It reads your actual code and asks about the specific choices you made. Not generic interview prep — actual questions about your project.\"", "James L.", "Indie hacker"],
           ].map(([quote, name, role]) => (
             <div key={name} className="landing-proof-card">
@@ -267,7 +317,7 @@ export default function Landing() {
       <div className="landing-cta-banner">
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 300, background: "radial-gradient(ellipse, rgba(226,75,74,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
         <h2 className="landing-cta-h2">Stop rehearsing.<br />Start getting grilled.</h2>
-        <p style={{ fontSize: 16, color: "var(--text-secondary)", marginBottom: 36, position: "relative" }}>Free to start. No credit card. Just paste your project and pick your interrogator.</p>
+        <p style={{ fontSize: 16, color: "var(--text-secondary)", marginBottom: 36, position: "relative" }}>Free to start. No credit card. Pitch your project or upload your resume — then survive 12 questions.</p>
         <button className="btn btn-primary" onClick={() => navigate("/auth")} style={{ fontSize: 15, padding: "18px 40px", letterSpacing: "0.06em", position: "relative" }}>
           Enter the Hot Seat →
         </button>
