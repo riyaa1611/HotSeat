@@ -276,7 +276,37 @@ export default function Profile() {
   useEffect(() => {
     Promise.all([getProfile(), getHistory()])
       .then(([prof, hist]) => {
-        setProfile(prof);
+        // Always compute session stats from history (Supabase direct) — more reliable than backend SQL
+        const now = Date.now();
+        const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+        const yearAgo = now - 365 * 24 * 60 * 60 * 1000;
+        const scores = hist.filter((s) => s.report?.overall != null).map((s) => s.report.overall);
+        const thisWeek = hist.filter((s) => s.ended_at && new Date(s.ended_at).getTime() >= weekAgo).length;
+        const actMap = {};
+        hist.forEach((s) => {
+          if (s.started_at && new Date(s.started_at).getTime() >= yearAgo) {
+            const key = s.started_at.slice(0, 10);
+            actMap[key] = (actMap[key] || 0) + 1;
+          }
+        });
+        const personaCounts = {};
+        hist.forEach((s) => { personaCounts[s.persona] = (personaCounts[s.persona] || 0) + 1; });
+        const mostUsed = Object.keys(personaCounts).sort((a, b) => personaCounts[b] - personaCounts[a])[0] || null;
+
+        setProfile({
+          ...prof,
+          total_sessions: hist.length,
+          sessions_this_week: thisWeek,
+          avg_score: scores.length ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null,
+          best_score: scores.length ? Math.max(...scores) : null,
+          most_used_persona: mostUsed,
+          activity_data: Object.entries(actMap).sort().map(([date, count]) => ({ date, count })),
+          score_history: hist.filter((s) => s.report?.overall != null).slice().reverse().map((s) => ({
+            date: s.started_at?.slice(0, 10) || "",
+            score: s.report.overall,
+            persona: s.persona,
+          })),
+        });
         setRecentSessions(hist.slice(0, 8));
       })
       .catch(() => { toast("Failed to load profile.", "error"); setProfile({}); })
