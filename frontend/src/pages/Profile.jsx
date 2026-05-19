@@ -279,7 +279,7 @@ export default function Profile() {
         setProfile(prof);
         setRecentSessions(hist.slice(0, 8));
       })
-      .catch(() => toast("Failed to load profile.", "error"))
+      .catch(() => { toast("Failed to load profile.", "error"); setProfile({}); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -308,7 +308,7 @@ export default function Profile() {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {showEdit && profile && <EditModal profile={profile} onSave={handleSave} onClose={() => setShowEdit(false)} />}
+      {showEdit && <EditModal profile={profile || {}} onSave={handleSave} onClose={() => setShowEdit(false)} />}
       <ToastContainer toasts={toasts} />
       <Grain />
 
