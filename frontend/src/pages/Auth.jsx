@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import HCaptcha from "@hcaptcha/react-hcaptcha";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../context/AuthContext";
@@ -80,7 +80,8 @@ function Field({ label, children }) {
 export default function Auth() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [mode, setMode] = useState("login");
+  const { state: navState } = useLocation();
+  const [mode, setMode] = useState(() => navState?.mode ?? "login");
   const [step, setStep] = useState("form"); // "form" | "otp" | "forgot" | "reset_sent" | "reset"
 
   useEffect(() => {

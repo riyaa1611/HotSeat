@@ -80,8 +80,8 @@ export default function Landing() {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <ThemeToggle />
-          <button className="btn btn-ghost landing-signin" onClick={() => navigate("/auth")} style={{ fontSize: 12, padding: "7px 16px" }}>Sign In</button>
-          <button className="btn btn-primary" onClick={() => navigate("/auth")} style={{ fontSize: 12, padding: "7px 16px", letterSpacing: "0.06em" }}>Get Started</button>
+          <button className="btn btn-ghost landing-signin" onClick={() => navigate("/auth", { state: { mode: "login" } })} style={{ fontSize: 12, padding: "7px 16px" }}>Sign In</button>
+          <button className="btn btn-primary" onClick={() => navigate("/auth", { state: { mode: "signup" } })} style={{ fontSize: 12, padding: "7px 16px", letterSpacing: "0.06em" }}>Get Started</button>
         </div>
       </nav>
 
@@ -104,7 +104,7 @@ export default function Landing() {
           </p>
 
           <div style={{ display: "flex", gap: 12, marginBottom: 48, flexWrap: "wrap" }}>
-            <button className="btn btn-primary" onClick={() => navigate("/auth")} style={{ fontSize: 14, padding: "14px 28px", letterSpacing: "0.06em" }}>
+            <button className="btn btn-primary" onClick={() => navigate("/auth", { state: { mode: "signup" } })} style={{ fontSize: 14, padding: "14px 28px", letterSpacing: "0.06em" }}>
               Start for Free →
             </button>
             <a href="#modes" className="btn btn-ghost" style={{ fontSize: 12, padding: "14px 20px", color: "var(--text-muted)", textDecoration: "none" }}>
@@ -318,7 +318,7 @@ export default function Landing() {
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 600, height: 300, background: "radial-gradient(ellipse, rgba(226,75,74,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
         <h2 className="landing-cta-h2">Stop rehearsing.<br />Start getting grilled.</h2>
         <p style={{ fontSize: 16, color: "var(--text-secondary)", marginBottom: 36, position: "relative" }}>Free to start. No credit card. Pitch your project or upload your resume — then survive 12 questions.</p>
-        <button className="btn btn-primary" onClick={() => navigate("/auth")} style={{ fontSize: 15, padding: "18px 40px", letterSpacing: "0.06em", position: "relative" }}>
+        <button className="btn btn-primary" onClick={() => navigate("/auth", { state: { mode: "signup" } })} style={{ fontSize: 15, padding: "18px 40px", letterSpacing: "0.06em", position: "relative" }}>
           Enter the Hot Seat →
         </button>
       </div>
