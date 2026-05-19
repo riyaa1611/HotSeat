@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import RepoInput from "../components/RepoInput";
 import PersonaSelector from "../components/PersonaSelector";
 import FocusAreaSelector from "../components/FocusAreaSelector";
 import ResumeInput from "../components/ResumeInput";
-import { parseRepo, parseUrl, startSession, startInterview, getHistory } from "../services/api";
+import { parseRepo, parseUrl, startSession, startInterview } from "../services/api";
 import { Grain, Logo, FlameIcon, LogoutButton, ThemeToggle } from "../components/shared";
 import { useAuth } from "../context/AuthContext";
 
@@ -33,15 +33,6 @@ export default function Home() {
   const [appMode, setAppMode] = useState("pitch");
   const [interviewData, setInterviewData] = useState(null);
   const [interviewPersona, setInterviewPersona] = useState(null);
-  const [streakCount, setStreakCount] = useState(0);
-
-  useEffect(() => {
-    getHistory().then((history) => {
-      const week = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const count = history.filter((s) => s.ended_at && new Date(s.ended_at).getTime() >= week).length;
-      setStreakCount(count);
-    }).catch(() => {});
-  }, []);
 
   async function handleParseRepo(url, mode = "github", description = "") {
     setError(""); setIsParsing(true); setParsedRepo(null); setRepoUrl(url); setProjectDescription(description);
@@ -88,15 +79,6 @@ export default function Home() {
       <Grain />
       <header className="page-header">
         <Logo size="sm" />
-        {streakCount > 0 && (
-          <div className="mono" style={{
-            fontSize: 11, letterSpacing: "0.12em", color: "var(--accent-amber)",
-            background: "var(--accent-amber-soft)", border: "1px solid var(--accent-amber)",
-            padding: "4px 10px", textTransform: "uppercase",
-          }}>
-            <FlameIcon size={12} color="var(--accent-amber)" /> {streakCount} this week
-          </div>
-        )}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Link to="/leaderboard" className="btn btn-ghost home-nav-leaderboard" style={{ padding: "6px 12px", fontSize: 14 }}>Leaderboard</Link>
           <Link to="/profile" className="btn btn-ghost" style={{ padding: "6px 12px", fontSize: 14 }}>Profile</Link>

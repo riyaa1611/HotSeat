@@ -152,13 +152,32 @@ export async function createShareReport(sessionId, report, persona, repoUrl) {
 }
 
 export async function getProfile() {
-  const { data } = await api.get("/user/profile");
-  return data;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return {};
+  const { data } = await supabase
+    .from("user_profiles")
+    .select("display_name, bio, job_title, company, location, linkedin_url, github_url")
+    .eq("user_id", session.user.id)
+    .maybeSingle();
+  return data || {};
 }
 
 export async function updateProfile(fields) {
-  const { data } = await api.patch("/user/profile", fields);
-  return data;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) throw new Error("Not authenticated");
+  const sanitized = {};
+  if (fields.display_name !== undefined) sanitized.display_name = String(fields.display_name).trim().slice(0, 80);
+  if (fields.bio !== undefined) sanitized.bio = String(fields.bio).trim().slice(0, 500);
+  if (fields.job_title !== undefined) sanitized.job_title = String(fields.job_title).trim().slice(0, 120);
+  if (fields.company !== undefined) sanitized.company = String(fields.company).trim().slice(0, 120);
+  if (fields.location !== undefined) sanitized.location = String(fields.location).trim().slice(0, 120);
+  if (fields.linkedin_url !== undefined) sanitized.linkedin_url = String(fields.linkedin_url).trim().slice(0, 300);
+  if (fields.github_url !== undefined) sanitized.github_url = String(fields.github_url).trim().slice(0, 300);
+  const { error } = await supabase
+    .from("user_profiles")
+    .upsert({ user_id: session.user.id, ...sanitized }, { onConflict: "user_id" });
+  if (error) throw error;
+  return { status: "ok" };
 }
 
 export default api;
