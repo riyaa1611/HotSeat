@@ -186,7 +186,7 @@ export default function Auth() {
       type: "signup",
     });
     if (error) {
-      setError(error.message.includes("expired") ? "Code expired. Request a new one." : "Invalid code. Check your email and try again.");
+      setError(error.message.includes("expired") ? "Code expired. Request a new one." : "Invalid code. Check your email and try again (code valid for 2 minutes).");
     } else if (displayName.trim()) {
       try { await updateProfile({ display_name: displayName.trim() }); } catch { /* non-fatal */ }
     }
@@ -373,7 +373,7 @@ export default function Auth() {
                 Check your inbox.
               </h1>
               <p style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 28px" }}>
-                We sent a 6-digit code to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>. Enter it below to verify your account.
+                We sent a 6-digit code to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>. Enter it below to verify your account. Code valid for 2 minutes.
               </p>
 
               <OTPInput onComplete={handleOTPComplete} />
